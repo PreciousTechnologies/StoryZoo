@@ -1,10 +1,11 @@
 class AppConstants {
   AppConstants._();
 
-  // API Configuration (backend removed)
-  // Backend services were removed; keep empty base for offline/local usage.
-  static const String apiBaseUrl = '';
-  static const String apiVersion = '';
+  // API Configuration – Django backend
+  // For local development the Django server runs on port 8000.
+  // On a physical Android device replace 127.0.0.1 with your machine's LAN IP.
+  static const String apiBaseUrl = 'http://127.0.0.1:8000';
+  static const String apiVersion = 'v1';
   
   // App Info
   static const String appName = 'Story Zoo';
