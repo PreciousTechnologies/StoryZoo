@@ -10,6 +10,21 @@
 .svn/
 migrate_working_dir/
 
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+*.pot
+db.sqlite3
+backend/.env
+backend/staticfiles/
+backend/media/
+
 # IntelliJ related
 *.iml
 *.ipr
