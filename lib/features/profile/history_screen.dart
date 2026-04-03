@@ -1,62 +1,89 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../shared/widgets/micro_interactions.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
+import 'data/profile_repository.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  final ProfileRepository _repository = ProfileRepository();
+  bool _isLoading = true;
+  String? _error;
+  HistoryData _history = const HistoryData(
+    mudaHours: 0,
+    vitabu: 0,
+    kumalizaPercent: 0,
+    groups: {'Leo': [], 'Jana': [], 'Wiki iliyopita': []},
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHistory());
+  }
+
+  @override
+  void dispose() {
+    _repository.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
+    final token = context.read<AuthProvider>().token;
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = 'Tafadhali ingia tena ili kuona historia.';
+      });
+      return;
+    }
+
+    try {
+      final payload = await _repository.fetchHistory(token);
+      if (!mounted) return;
+      setState(() {
+        _history = payload;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Mock history data grouped by date
-    final historyData = {
-      'Leo': [
-        {
-          'title': 'Simba Mjanja',
-          'author': 'Juma Bakari',
-          'coverImage': 'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=800&q=80',
-          'progress': 0.75,
-          'time': '2 masaa',
-        },
-        {
-          'title': 'Pembe ya Ndovu',
-          'author': 'Amina Hassan',
-          'coverImage': 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=800&q=80',
-          'progress': 0.45,
-          'time': '1 saa',
-        },
-      ],
-      'Jana': [
-        {
-          'title': 'Twiga na Sungura',
-          'author': 'Mohamed Ali',
-          'coverImage': 'https://images.unsplash.com/photo-1551316679-9c6ae9dec224?w=800&q=80',
-          'progress': 1.0,
-          'time': '3 masaa',
-        },
-      ],
-      'Wiki iliyopita': [
-        {
-          'title': 'Fisi Mjanja',
-          'author': 'Fatuma Rashid',
-          'coverImage': 'https://images.unsplash.com/photo-1589883661923-6476cb0ae9f2?w=800&q=80',
-          'progress': 0.6,
-          'time': '5 masaa',
-        },
-      ],
-    };
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundTop = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundBottom = isDark ? const Color(0xFF2A1B12) : AppColors.warmBeige;
+    final secondaryText = isDark ? Colors.white70 : AppColors.textSecondary;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.backgroundLight,
-              AppColors.warmBeige,
+              backgroundTop,
+              backgroundBottom,
             ],
           ),
         ),
@@ -78,16 +105,16 @@ class HistoryScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          AppText(
                             'Historia',
                             style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 24)).copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
-                          Text(
+                          AppText(
                             'Hadithi nilizosoma',
                             style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: secondaryText,
                                 ),
                           ),
                         ],
@@ -106,28 +133,7 @@ class HistoryScreen extends StatelessWidget {
 
               // History list
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
-                  children: historyData.entries.map((entry) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12, top: 8),
-                          child: Text(
-                            entry.key,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        ...entry.value.map((item) => _buildHistoryCard(context, item)).toList(),
-                      ],
-                    );
-                  }).toList(),
-                ),
+                child: _buildBody(context),
               ),
             ],
           ),
@@ -136,12 +142,137 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item) {
+  Widget _buildBody(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.paddingLarge),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppText(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              ElevatedButton(onPressed: _loadHistory, child: AppText('Jaribu tena')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final groups = {
+      'Leo': _history.groups['Leo'] ?? const <HistoryEntry>[],
+      'Jana': _history.groups['Jana'] ?? const <HistoryEntry>[],
+      'Wiki iliyopita': _history.groups['Wiki iliyopita'] ?? const <HistoryEntry>[],
+    };
+
+    final hasAnyItems = groups.values.any((items) => items.isNotEmpty);
+
+    return RefreshIndicator(
+      onRefresh: _loadHistory,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge).copyWith(bottom: 40),
+        children: [
+          StaggeredFadeSlide(
+            order: 0,
+            child: NeumorphicCard(
+              borderRadius: 20,
+              color: cardSurface,
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Expanded(child: _buildMetric('Muda', '${_history.mudaHours.toStringAsFixed(1)}h', Icons.timer_outlined)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildMetric('Vitabu', '${_history.vitabu}', Icons.library_books_outlined)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _buildMetric('Kumaliza', '${_history.kumalizaPercent.toStringAsFixed(0)}%', Icons.trending_up_rounded)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (!hasAnyItems)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: AppText(
+                  'Hakuna historia ya usomaji kwa sasa.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+          ...groups.entries.map((entry) {
+            if (entry.value.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12, top: 8),
+                  child: AppText(
+                    entry.key,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                ...entry.value.asMap().entries.map((row) {
+                  return StaggeredFadeSlide(
+                    order: row.key + 1,
+                    child: _buildHistoryCard(context, row.value),
+                  );
+                }),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetric(String title, String value, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: isDark ? const Color(0x33FFFFFF) : AppColors.warmBeige.withOpacity(0.35),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 16, color: AppColors.sunsetOrange),
+          const SizedBox(height: 4),
+          AppText(value, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          const SizedBox(height: 2),
+          AppText(
+            title,
+            style: TextStyle(fontSize: 10, color: isDark ? Colors.white60 : AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(BuildContext context, HistoryEntry item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final placeholderSurface = isDark ? const Color(0xFF3A2A20) : AppColors.backgroundLight;
+    final mutedText = isDark ? Colors.white70 : AppColors.textMuted;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: NeumorphicCard(
         borderRadius: 20,
-        color: AppColors.cardBackground,
+        color: cardSurface,
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -152,21 +283,21 @@ class HistoryScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: CachedNetworkImage(
-                    imageUrl: item['coverImage'],
+                    imageUrl: item.story.coverImage,
                     width: 70,
                     height: 90,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      color: AppColors.backgroundLight,
+                      color: placeholderSurface,
                       child: const Center(child: CircularProgressIndicator()),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: AppColors.backgroundLight,
+                      color: placeholderSurface,
                       child: const Icon(Icons.book, size: 30, color: AppColors.textMuted),
                     ),
                   ),
                 ),
-                if (item['progress'] == 1.0)
+                if (item.progress >= 1.0)
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -195,8 +326,8 @@ class HistoryScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item['title'],
+                  AppText(
+                    item.story.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -205,11 +336,11 @@ class HistoryScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    item['author'],
+                  AppText(
+                    item.story.author,
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                        color: isDark ? Colors.white70 : AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -217,11 +348,11 @@ class HistoryScreen extends StatelessWidget {
                     children: [
                       const Icon(Icons.access_time, size: 14, color: AppColors.textMuted),
                       const SizedBox(width: 4),
-                      Text(
-                        item['time'],
-                        style: const TextStyle(
+                      AppText(
+                        item.timeLabel,
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textMuted,
+                          color: mutedText,
                         ),
                       ),
                     ],
@@ -234,20 +365,20 @@ class HistoryScreen extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
-                          value: item['progress'],
-                          backgroundColor: AppColors.backgroundLight,
+                          value: item.progress,
+                          backgroundColor: isDark ? const Color(0x44FFFFFF) : AppColors.backgroundLight,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            item['progress'] == 1.0 ? AppColors.success : AppColors.sunsetOrange,
+                            item.progress >= 1.0 ? AppColors.success : AppColors.sunsetOrange,
                           ),
                           minHeight: 6,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${(item['progress'] * 100).toInt()}% iliyomaliza',
-                        style: const TextStyle(
+                      AppText(
+                        '${(item.progress * 100).toInt()}% iliyomaliza',
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textMuted,
+                          color: mutedText,
                         ),
                       ),
                     ],
@@ -262,7 +393,7 @@ class HistoryScreen extends StatelessWidget {
               size: 40,
               iconColor: AppColors.sunsetOrange,
               onPressed: () {
-                // Navigate to story
+                context.push('/story/${item.story.id}', extra: item.story);
               },
             ),
           ],
@@ -276,28 +407,29 @@ class HistoryScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Futa Historia'),
-        content: const Text('Je, una uhakika unataka kufuta historia yako yote?'),
+        title: AppText('Futa Historia'),
+        content: AppText('Je, una uhakika unataka kufuta historia yako yote?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Ghairi'),
+            child: AppText('Ghairi'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Historia imefutwa')),
+                const SnackBar(content: AppText('Historia imefutwa')),
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Futa'),
+            child: AppText('Futa'),
           ),
         ],
       ),
     );
   }
 }
+

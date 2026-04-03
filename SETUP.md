@@ -135,13 +135,37 @@ To complete the app, you'll need to implement:
 3. **Author Dashboard** - Statistics cards, upload functionality
 4. **Child UI** - Simplified, colorful interface with clay components
 5. **Authentication** - Login/Register screens
-6. **Backend Integration** - Not included in this repository; set up your own API and point `AppConstants.apiBaseUrl` to it
+6. **Backend Integration** - Set your API base URL via `--dart-define API_BASE_URL=http://<YOUR_LAN_IP>:8000`
 
-	Auth endpoints required (example):
+	Auth endpoints available:
 
-	- `POST /auth/request-otp`  — body: `{ "email": "user@example.com" }`
-	- `POST /auth/verify-otp`   — body: `{ "email": "user@example.com", "otp": "123456" }` → response: `{ "token": "..." }`
-	- `POST /auth/logout`       — header: `Authorization: Bearer <token>`
+	- `POST /api/auth/google/` — body: `{ "id_token": "<google-id-token>" }` → response: `{ "token": "..." }`
+	- `POST /auth/request-otp` — body: `{ "email": "user@example.com" }` (legacy flow)
+	- `POST /auth/verify-otp`  — body: `{ "email": "user@example.com", "otp": "123456" }` (legacy flow)
+
+## 🔐 Google OAuth2 Setup
+
+1. Create OAuth client IDs in Google Cloud Console (or Firebase Auth):
+	- Android client ID for app sign-in
+	- Web client ID (used as `serverClientId` and backend audience)
+2. Set backend env variable in `backend/.env`:
+	- `GOOGLE_OAUTH_CLIENT_ID=<YOUR_WEB_CLIENT_ID>`
+3. Run backend migrations (for token auth table):
+
+```bash
+cd backend
+python manage.py migrate
+```
+
+4. Run Flutter app with Google web client id:
+
+```bash
+flutter run \
+  --dart-define API_BASE_URL=http://<YOUR_LAN_IP>:8000 \
+  --dart-define GOOGLE_WEB_CLIENT_ID=<YOUR_WEB_CLIENT_ID>
+```
+
+5. Restart Django server after changing `.env`.
 ## 🐛 Troubleshooting
 
 ### "Package not found" errors

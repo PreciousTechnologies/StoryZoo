@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
+import '../../core/utils/responsive_utils.dart';
 import '../../shared/widgets/glassmorphic_container.dart';
+import '../../shared/widgets/micro_interactions.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 import '../../shared/widgets/enhanced_bottom_nav.dart';
 import '../../models/story.dart';
@@ -15,8 +19,8 @@ class SavedScreen extends StatefulWidget {
   State<SavedScreen> createState() => _SavedScreenState();
 }
 
-class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _SavedScreenState extends State<SavedScreen> {
+  int _activeTab = 0;
 
   // Mock saved and purchased stories
   final List<Story> _purchasedStories = [
@@ -71,28 +75,26 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final isAuthor = context.watch<AuthProvider>().isAuthor;
+    final visibleStories = _activeTab == 0 ? _purchasedStories : _savedStories;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundTop = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundBottom = isDark ? const Color(0xFF26443A) : AppColors.mintGreen;
+    final primaryText = isDark ? Colors.white : AppColors.textPrimary;
+    final secondaryText = isDark ? Colors.white70 : AppColors.textSecondary;
+    final glassColor = isDark ? AppColors.glassDark : AppColors.glassWhite;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.backgroundLight,
-              AppColors.mintGreen,
+              backgroundTop,
+              backgroundBottom,
             ],
           ),
         ),
@@ -100,112 +102,128 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
           child: Column(
             children: [
               // Header
-              Padding(
-                padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              StaggeredFadeSlide(
+                order: 0,
+                child: Padding(
+                  padding: EdgeInsets.all(ResponsiveUtils.getPadding(context)),
+                  child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Maktaba Yangu',
-                          style: (Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 28)).copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppText(
+                              'Maktaba Yangu',
+                              style: (Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 28)).copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryText,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            AppText(
+                              '${_purchasedStories.length + _savedStories.length} hadithi jumla',
+                              style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
+                                    color: secondaryText,
+                                  ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_purchasedStories.length + _savedStories.length} hadithi jumla',
-                          style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                        GlassmorphicContainer(
+                          width: ResponsiveUtils.getIconButtonSize(context),
+                          height: ResponsiveUtils.getIconButtonSize(context),
+                          borderRadius: ResponsiveUtils.getIconButtonSize(context) / 2,
+                          blur: 10,
+                          color: glassColor,
+                          borderColor: AppColors.glassBorder,
+                          borderWidth: 1.5,
+                          child: IconButton(
+                            icon: const Icon(Icons.search, color: AppColors.sunsetOrange),
+                            onPressed: () {},
+                          ),
                         ),
                       ],
                     ),
-                    GlassmorphicContainer(
-                      width: 50,
-                      height: 50,
-                      borderRadius: 25,
-                      blur: 10,
-                      color: AppColors.glassWhite,
-                      borderColor: AppColors.glassBorder,
-                      borderWidth: 1.5,
-                      child: IconButton(
-                        icon: const Icon(Icons.search, color: AppColors.sunsetOrange),
-                        onPressed: () {
-                          // Search functionality
-                        },
+                    const SizedBox(height: 14),
+                    NeumorphicCard(
+                      borderRadius: ResponsiveUtils.getBorderRadius(context),
+                      padding: EdgeInsets.all(ResponsiveUtils.getSpacing(context)),
+                      color: cardSurface,
+                      child: Row(
+                        children: [
+                          _buildKpi('Zimesomwa', '${_purchasedStories.length}', Icons.menu_book),
+                          SizedBox(width: ResponsiveUtils.getSpacing(context) * 0.7),
+                          _buildKpi('Wish List', '${_savedStories.length}', Icons.favorite),
+                          SizedBox(width: ResponsiveUtils.getSpacing(context) * 0.7),
+                          _buildKpi('Audio', '${_purchasedStories.where((s) => s.hasAudio).length}', Icons.headphones),
+                        ],
                       ),
                     ),
                   ],
-                ),
-              ),
-
-              // Tab Bar
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
-                child: GlassmorphicContainer(
-                  height: 50,
-                  borderRadius: 25,
-                  blur: 8,
-                  color: AppColors.glassWhite,
-                  borderColor: AppColors.glassBorder,
-                  borderWidth: 1.5,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.success, AppColors.savannaGreen],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: AppColors.textMuted,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                    tabs: [
-                      Tab(text: 'Nilinunua (${_purchasedStories.length})'),
-                      Tab(text: 'Zilizohifadhiwa (${_savedStories.length})'),
-                    ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              // Tab Views
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
+              // Neumorphic segmented tabs
+              StaggeredFadeSlide(
+                order: 1,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
+                  child: Row(
                   children: [
-                    // Purchased tab
-                    _purchasedStories.isEmpty
-                        ? _buildEmptyState('Hakuna Hadithi Ulizozinunua', 'Nenda kwenye duka ukaanze kuchagua hadithi')
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppConstants.paddingLarge,
-                              vertical: 8,
-                            ).copyWith(bottom: 100),
-                            itemCount: _purchasedStories.length,
-                            itemBuilder: (context, index) {
-                              return _buildStoryCard(_purchasedStories[index], isPurchased: true);
-                            },
-                          ),
-                    // Saved tab
-                    _savedStories.isEmpty
-                        ? _buildEmptyState('Hakuna Hadithi Zilizohifadhiwa', 'Bonyeza ikoni ya moyo kuhifadhi hadithi')
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppConstants.paddingLarge,
-                              vertical: 8,
-                            ).copyWith(bottom: 100),
-                            itemCount: _savedStories.length,
-                            itemBuilder: (context, index) {
-                              return _buildStoryCard(_savedStories[index], isPurchased: false);
-                            },
-                          ),
+                    Expanded(
+                      child: _buildSegment(
+                        title: 'Nilinunua',
+                        count: _purchasedStories.length,
+                        active: _activeTab == 0,
+                        onTap: () => setState(() => _activeTab = 0),
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveUtils.getSpacing(context)),
+                    Expanded(
+                      child: _buildSegment(
+                        title: 'Zilizohifadhiwa',
+                        count: _savedStories.length,
+                        active: _activeTab == 1,
+                        onTap: () => setState(() => _activeTab = 1),
+                      ),
+                    ),
                   ],
+                  ),
+                ),
+              ),
+
+              SizedBox(height: ResponsiveUtils.getSpacing(context) * 1.5),
+
+              // Story list
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: visibleStories.isEmpty
+                      ? _buildEmptyState(
+                          _activeTab == 0 ? 'Hakuna Hadithi Ulizozinunua' : 'Hakuna Hadithi Zilizohifadhiwa',
+                          _activeTab == 0
+                              ? 'Nenda Explore uchague hadithi za kusoma.'
+                              : 'Bonyeza ikoni ya moyo kuhifadhi hadithi unazopenda.',
+                        )
+                      : ListView.builder(
+                          key: ValueKey<int>(_activeTab),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveUtils.getPadding(context),
+                            vertical: ResponsiveUtils.getSpacing(context) * 0.5,
+                          ).copyWith(bottom: 100),
+                          itemCount: visibleStories.length,
+                          itemBuilder: (context, index) {
+                            return StaggeredFadeSlide(
+                              order: index,
+                              child: _buildStoryCard(visibleStories[index], isPurchased: _activeTab == 0),
+                            );
+                          },
+                        ),
                 ),
               ),
             ],
@@ -214,7 +232,7 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
       ),
       bottomNavigationBar: EnhancedBottomNav(
         currentIndex: 2,
-        isAuthor: true,
+        isAuthor: isAuthor,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -239,37 +257,42 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
   }
 
   Widget _buildEmptyState(String title, String subtitle) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final glassColor = isDark ? AppColors.glassDark : AppColors.glassWhite;
+    final primaryText = isDark ? Colors.white : AppColors.textPrimary;
+    final secondaryText = isDark ? Colors.white70 : AppColors.textSecondary;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GlassmorphicContainer(
-            width: 150,
-            height: 150,
-            borderRadius: 75,
+            width: ResponsiveUtils.getIconButtonSize(context) * 1.8,
+            height: ResponsiveUtils.getIconButtonSize(context) * 1.8,
+            borderRadius: ResponsiveUtils.getIconButtonSize(context) * 0.9,
             blur: 15,
-            color: AppColors.glassWhite,
+            color: glassColor,
             borderColor: AppColors.glassBorder,
             borderWidth: 2,
-            child: const Icon(
+            child: Icon(
               Icons.library_books,
-              size: 80,
+              size: ResponsiveUtils.getIconButtonSize(context) * 0.9,
               color: AppColors.textMuted,
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
+          SizedBox(height: ResponsiveUtils.getSpacing(context) * 1.5),
+          AppText(
             title,
             style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: primaryText,
                 ),
           ),
           const SizedBox(height: 8),
-          Text(
+          AppText(
             subtitle,
             style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
-                  color: AppColors.textSecondary,
+                  color: secondaryText,
                 ),
             textAlign: TextAlign.center,
           ),
@@ -279,27 +302,35 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
   }
 
   Widget _buildStoryCard(Story story, {required bool isPurchased}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final mutedText = isDark ? Colors.white70 : AppColors.textMuted;
+    final placeholderAccent = isDark ? AppColors.warmBeige : Colors.white;
+
+    final imageWidth = ResponsiveUtils.isMobile(context) ? 120.0 : 160.0;
+    final imageHeight = ResponsiveUtils.isMobile(context) ? 160.0 : 220.0;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: ResponsiveUtils.getSpacing(context)),
       child: GestureDetector(
         onTap: () {
           context.push('/story/${story.id}', extra: story);
         },
         child: NeumorphicCard(
-          borderRadius: 20,
+          borderRadius: ResponsiveUtils.getBorderRadius(context),
           padding: EdgeInsets.zero,
-          color: AppColors.cardBackground,
+          color: cardSurface,
           child: Row(
             children: [
               // Cover image
               ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  bottomLeft: Radius.circular(20),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(ResponsiveUtils.getBorderRadius(context)),
+                  bottomLeft: Radius.circular(ResponsiveUtils.getBorderRadius(context)),
                 ),
                 child: SizedBox(
-                  width: 120,
-                  height: 160,
+                  width: imageWidth,
+                  height: imageHeight,
                   child: story.coverImage.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: story.coverImage,
@@ -310,13 +341,13 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  AppColors.clayBlue.withOpacity(0.7),
-                                  AppColors.clayPink.withOpacity(0.7),
+                                  AppColors.clayBlue.withValues(alpha: 0.7),
+                                  AppColors.clayPink.withValues(alpha: 0.7),
                                 ],
                               ),
                             ),
-                            child: const Center(
-                              child: CircularProgressIndicator(color: Colors.white),
+                            child: Center(
+                              child: CircularProgressIndicator(color: placeholderAccent),
                             ),
                           ),
                           errorWidget: (context, url, error) => Container(
@@ -325,16 +356,16 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  AppColors.clayBlue.withOpacity(0.7),
-                                  AppColors.clayPink.withOpacity(0.7),
+                                  AppColors.clayBlue.withValues(alpha: 0.7),
+                                  AppColors.clayPink.withValues(alpha: 0.7),
                                 ],
                               ),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Icon(
                                 Icons.auto_stories,
                                 size: 50,
-                                color: Colors.white,
+                                color: placeholderAccent,
                               ),
                             ),
                           ),
@@ -345,16 +376,16 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                AppColors.clayBlue.withOpacity(0.7),
-                                AppColors.clayPink.withOpacity(0.7),
+                                AppColors.clayBlue.withValues(alpha: 0.7),
+                                AppColors.clayPink.withValues(alpha: 0.7),
                               ],
                             ),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Icon(
                               Icons.auto_stories,
                               size: 50,
-                              color: Colors.white,
+                              color: placeholderAccent,
                             ),
                           ),
                         ),
@@ -364,18 +395,26 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
               // Story details
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(
+                    ResponsiveUtils.getSpacing(context),
+                    ResponsiveUtils.getSpacing(context) * 0.8,
+                    ResponsiveUtils.getSpacing(context) * 0.7,
+                    ResponsiveUtils.getSpacing(context) * 0.8,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Category badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.sunsetOrange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveUtils.getSpacing(context) * 0.6,
+                          vertical: ResponsiveUtils.getSpacing(context) * 0.25,
                         ),
-                        child: Text(
+                        decoration: BoxDecoration(
+                          color: AppColors.sunsetOrange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(ResponsiveUtils.getBorderRadius(context) * 0.5),
+                        ),
+                        child: AppText(
                           story.category,
                           style: const TextStyle(
                             fontSize: 11,
@@ -384,10 +423,10 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.5),
 
                       // Title
-                      Text(
+                      AppText(
                         story.title,
                         style: (Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 16)).copyWith(
                               fontWeight: FontWeight.bold,
@@ -395,42 +434,59 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.25),
 
                       // Author
-                      Text(
+                      AppText(
                         story.author,
-                        style: const TextStyle(
+                          style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textMuted,
+                          color: mutedText,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.7),
+
+                      // Reading progress
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.getBorderRadius(context) * 0.4),
+                        child: LinearProgressIndicator(
+                          value: isPurchased ? 0.65 : 0.0,
+                          minHeight: ResponsiveUtils.getSpacing(context) * 0.35,
+                          backgroundColor: AppColors.warmBeige.withValues(alpha: 0.6),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isPurchased ? AppColors.success : AppColors.sunsetOrange.withValues(alpha: 0.45),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.5),
 
                       // Rating and audio indicator
                       Row(
                         children: [
                           const Icon(Icons.star, color: AppColors.warning, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
+                          SizedBox(width: ResponsiveUtils.getSpacing(context) * 0.25),
+                          AppText(
                             '${story.rating}',
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: ResponsiveUtils.getSpacing(context) * 0.5),
                           if (story.hasAudio) ...[
                             Flexible(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.info.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(10),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: ResponsiveUtils.getSpacing(context) * 0.35,
+                                  vertical: ResponsiveUtils.getSpacing(context) * 0.15,
                                 ),
-                                child: const Row(
+                                decoration: BoxDecoration(
+                                  color: AppColors.info.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(ResponsiveUtils.getBorderRadius(context) * 0.5),
+                                ),
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.headphones, size: 11, color: AppColors.info),
-                                    SizedBox(width: 3),
-                                    Text(
+                                    Icon(Icons.headphones, size: ResponsiveUtils.getSpacing(context) * 0.65, color: AppColors.info),
+                                    SizedBox(width: ResponsiveUtils.getSpacing(context) * 0.15),
+                                    AppText(
                                       'Audio',
                                       style: TextStyle(
                                         fontSize: 9,
@@ -443,6 +499,19 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                               ),
                             ),
                           ],
+                        ],
+                      ),
+                      SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.5),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppText(
+                              isPurchased ? 'Mwisho kusoma: Jana, 21:00' : 'Imehifadhiwa kwa baadaye',
+                              style: TextStyle(fontSize: 11, color: mutedText),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -464,7 +533,7 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                       // Download functionality
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Inapakuliwa...'),
+                          content: AppText('Inapakuliwa...'),
                           duration: Duration(seconds: 2),
                         ),
                       );
@@ -474,7 +543,7 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Imeondolewa kutoka kwenye zilizohifadhiwa'),
+                          content: AppText('Imeondolewa kutoka kwenye zilizohifadhiwa'),
                           duration: Duration(seconds: 2),
                         ),
                       );
@@ -488,4 +557,124 @@ class _SavedScreenState extends State<SavedScreen> with SingleTickerProviderStat
       ),
     );
   }
+
+  Widget _buildKpi(String title, String value, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: isDark
+              ? const Color(0x33FFFFFF)
+              : AppColors.warmBeige.withValues(alpha: 0.35),
+          border: Border.all(color: AppColors.glassBorder),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.sunsetOrange, size: 18),
+            const SizedBox(height: 6),
+            AppText(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+            const SizedBox(height: 2),
+            AppText(
+              title,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white60 : AppColors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegment({
+    required String title,
+    required int count,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: active
+              ? const LinearGradient(colors: [AppColors.success, AppColors.savannaGreen])
+                : LinearGradient(
+                  colors: isDark
+                    ? const [Color(0xFF3A2A20), Color(0xFF2D211A)]
+                    : const [Color(0xFFFFF6E8), Color(0xFFF8ECDC)],
+                ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppColors.success.withValues(alpha: 0.28),
+                    blurRadius: 14,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: isDark ? AppColors.sandBrown.withValues(alpha: 0.16) : Colors.white,
+                    offset: const Offset(-4, -4),
+                    blurRadius: 8,
+                  ),
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.4)
+                        : Colors.brown.withValues(alpha: 0.12),
+                    offset: const Offset(4, 4),
+                    blurRadius: 8,
+                  ),
+                ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: AppText(
+                title,
+                style: TextStyle(
+                  color: active ? Colors.white : (isDark ? Colors.white70 : AppColors.textPrimary),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: active ? Colors.white24 : AppColors.sunsetOrange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: AppText(
+                '$count',
+                style: TextStyle(
+                  color: active ? Colors.white : AppColors.sunsetOrange,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+

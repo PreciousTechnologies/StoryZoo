@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
@@ -73,7 +74,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          AppText(
                             '👋 Karibu!',
                             style: (Theme.of(context).textTheme.displaySmall ?? const TextStyle(fontSize: 32)).copyWith(
                                   fontWeight: FontWeight.bold,
@@ -91,7 +92,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      AppText(
                         'Chagua hadithi ya kusoma! 📚',
                         style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 20)).copyWith(
                               color: AppColors.textSecondary,
@@ -185,12 +186,12 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            AppText(
               emoji,
               style: const TextStyle(fontSize: 40),
             ),
             const SizedBox(height: 8),
-            Text(
+            AppText(
               label,
               style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
                     fontWeight: FontWeight.bold,
@@ -243,7 +244,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                       errorWidget: (context, url, error) => Container(
                         color: Colors.white.withOpacity(0.5),
                         child: Center(
-                          child: Text(
+                          child: AppText(
                             ['📖', '🎧', '🌟', '✨'][index % 4],
                             style: const TextStyle(fontSize: 80),
                           ),
@@ -257,7 +258,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: Center(
-                        child: Text(
+                        child: AppText(
                           ['📖', '🎧', '🌟', '✨'][index % 4],
                           style: const TextStyle(fontSize: 80),
                         ),
@@ -269,7 +270,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
           const SizedBox(height: 16),
 
           // Title
-          Text(
+          AppText(
             story.title,
             style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 20)).copyWith(
                   fontWeight: FontWeight.bold,
@@ -282,7 +283,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
           const SizedBox(height: 8),
 
           // Author with emoji
-          Text(
+          AppText(
             '👤 ${story.author}',
             style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
                   color: AppColors.textSecondary,
@@ -308,7 +309,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                     children: [
                       const Icon(Icons.menu_book_rounded, color: Colors.white, size: 24),
                       const SizedBox(width: 8),
-                      Text(
+                      AppText(
                         'Soma',
                         style: (Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 16)).copyWith(
                               color: Colors.white,
@@ -342,7 +343,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                         size: 24,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      AppText(
                         'Sikiliza',
                         style: (Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 16)).copyWith(
                               color: story.hasAudio ? Colors.white : AppColors.textMuted,
@@ -372,7 +373,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                 children: [
                   const Icon(Icons.family_restroom, color: AppColors.textPrimary, size: 24),
                   const SizedBox(width: 8),
-                  Text(
+                  AppText(
                     'Omba Mzazi 🙏',
                     style: (Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 16)).copyWith(
                           color: AppColors.textPrimary,
@@ -408,7 +409,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          AppText(
             label,
             style: TextStyle(
               fontSize: 11,
@@ -435,19 +436,19 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
+              AppText(
                 '👨👩👧👦',
                 style: const TextStyle(fontSize: 80),
               ),
               const SizedBox(height: 20),
-              Text(
+              AppText(
                 'Omba Mzazi',
                 style: (Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 24)).copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 16),
-              Text(
+              AppText(
                 'Ujumbe umepelekwa kwa mzazi wako kumwomba ruhusa ya kununua hadithi hii! 🎉',
                 style: Theme.of(context).textTheme.bodyLarge,
                 textAlign: TextAlign.center,
@@ -459,7 +460,7 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
                 },
                 color: AppColors.childGreen,
                 height: 55,
-                child: Text(
+                child: AppText(
                   'Sawa! 👍',
                   style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
                         color: Colors.white,
@@ -474,3 +475,4 @@ class _ChildUIScreenState extends State<ChildUIScreen> {
     );
   }
 }
+

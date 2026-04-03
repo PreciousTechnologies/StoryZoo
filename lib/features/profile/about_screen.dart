@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../shared/widgets/glassmorphic_container.dart';
+import '../../shared/widgets/micro_interactions.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -10,15 +12,22 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundTop = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundBottom = isDark ? const Color(0xFF2A1B12) : AppColors.warmBeige;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final glassColor = isDark ? AppColors.glassDark : AppColors.glassWhite;
+    final secondaryText = isDark ? Colors.white70 : AppColors.textSecondary;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.backgroundLight,
-              AppColors.warmBeige,
+              backgroundTop,
+              backgroundBottom,
             ],
           ),
         ),
@@ -40,16 +49,16 @@ class AboutScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          AppText(
                             'Kuhusu',
                             style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 24)).copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
-                          Text(
+                          AppText(
                             'Kuhusu Story Zoo',
                             style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: secondaryText,
                                 ),
                           ),
                         ],
@@ -64,8 +73,10 @@ class AboutScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
                   children: [
                     // App Logo
-                    Center(
-                      child: Container(
+                    StaggeredFadeSlide(
+                      order: 0,
+                      child: Center(
+                        child: Container(
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
@@ -86,6 +97,7 @@ class AboutScreen extends StatelessWidget {
                           size: 60,
                           color: Colors.white,
                         ),
+                        ),
                       ),
                     ),
 
@@ -95,7 +107,7 @@ class AboutScreen extends StatelessWidget {
                     const Center(
                       child: Column(
                         children: [
-                          Text(
+                          AppText(
                             'Story Zoo',
                             style: TextStyle(
                               fontSize: 28,
@@ -104,7 +116,7 @@ class AboutScreen extends StatelessWidget {
                             ),
                           ),
                           SizedBox(height: 8),
-                          Text(
+                          AppText(
                             'Toleo 1.0.0',
                             style: TextStyle(
                               fontSize: 16,
@@ -117,15 +129,34 @@ class AboutScreen extends StatelessWidget {
 
                     const SizedBox(height: 32),
 
+                    NeumorphicCard(
+                      borderRadius: 22,
+                      color: cardSurface,
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(child: _miniInfo(context, 'Readers', '12K+')),
+                          const SizedBox(width: 10),
+                          Expanded(child: _miniInfo(context, 'Stories', '1.2K')),
+                          const SizedBox(width: 10),
+                          Expanded(child: _miniInfo(context, 'Rating', '4.8')),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
                     // Description
-                    GlassmorphicContainer(
-                      borderRadius: 20,
-                      blur: 10,
-                      color: AppColors.glassWhite,
-                      borderColor: AppColors.glassBorder,
-                      borderWidth: 1.5,
-                      padding: const EdgeInsets.all(20),
-                      child: const Text(
+                    StaggeredFadeSlide(
+                      order: 1,
+                      child: GlassmorphicContainer(
+                        borderRadius: 20,
+                        blur: 10,
+                        color: glassColor,
+                        borderColor: AppColors.glassBorder,
+                        borderWidth: 1.5,
+                        padding: const EdgeInsets.all(20),
+                        child: AppText(
                         'Story Zoo ni jukwaa la kisasa la hadithi za Kiswahili ambapo wasomaji wanaweza kugundua, kununua na kusoma hadithi za kuvutia. Waandishi pia wanaweza kuandika na kuuza hadithi zao kwa umma mkubwa.',
                         style: TextStyle(
                           fontSize: 15,
@@ -133,6 +164,7 @@ class AboutScreen extends StatelessWidget {
                           height: 1.6,
                         ),
                         textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
 
@@ -140,6 +172,7 @@ class AboutScreen extends StatelessWidget {
 
                     // Info sections
                     _buildInfoCard(
+                      context,
                       'Kampuni',
                       'Story Zoo Technologies Ltd.\nDar es Salaam, Tanzania',
                       Icons.business,
@@ -149,6 +182,7 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: 16),
 
                     _buildInfoCard(
+                      context,
                       'Barua Pepe',
                       'info@storyzoo.co.tz\nsupport@storyzoo.co.tz',
                       Icons.email,
@@ -158,6 +192,7 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: 16),
 
                     _buildInfoCard(
+                      context,
                       'Simu',
                       '+255 754 123 456\n+255 765 789 012',
                       Icons.phone,
@@ -167,7 +202,7 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: 32),
 
                     // Links section
-                    const Text(
+                    AppText(
                       'Viungo',
                       style: TextStyle(
                         fontSize: 18,
@@ -207,7 +242,7 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: 32),
 
                     // Social media
-                    const Text(
+                    AppText(
                       'Tufuate',
                       style: TextStyle(
                         fontSize: 18,
@@ -233,7 +268,7 @@ class AboutScreen extends StatelessWidget {
 
                     // Copyright
                     Center(
-                      child: Text(
+                      child: AppText(
                         '© 2026 Story Zoo. Haki zote zimehifadhiwa.',
                         style: TextStyle(
                           fontSize: 12,
@@ -243,7 +278,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 120),
                   ],
                 ),
               ),
@@ -254,10 +289,12 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(String title, String content, IconData icon, Color color) {
+  Widget _buildInfoCard(BuildContext context, String title, String content, IconData icon, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return NeumorphicCard(
       borderRadius: 20,
-      color: AppColors.cardBackground,
+      color: isDark ? const Color(0xFF2F2118) : AppColors.cardBackground,
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
@@ -275,20 +312,20 @@ class AboutScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AppText(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textMuted,
+                    color: isDark ? Colors.white60 : AppColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                AppText(
                   content,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
-                    color: AppColors.textPrimary,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -306,15 +343,17 @@ class AboutScreen extends StatelessWidget {
     IconData icon,
     Color color,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Inafungua $title...')),
+          SnackBar(content: AppText('Inafungua $title...')),
         );
       },
       child: NeumorphicCard(
         borderRadius: 20,
-        color: AppColors.cardBackground,
+        color: isDark ? const Color(0xFF2F2118) : AppColors.cardBackground,
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -332,7 +371,7 @@ class AboutScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AppText(
                     title,
                     style: const TextStyle(
                       fontSize: 15,
@@ -340,17 +379,21 @@ class AboutScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  AppText(
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: isDark ? Colors.white70 : AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.textMuted, size: 16),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: isDark ? Colors.white54 : AppColors.textMuted,
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -367,4 +410,28 @@ class AboutScreen extends StatelessWidget {
       },
     );
   }
+
+  Widget _miniInfo(BuildContext context, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: isDark ? const Color(0x33FFFFFF) : AppColors.warmBeige.withOpacity(0.35),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Column(
+        children: [
+          AppText(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          const SizedBox(height: 2),
+          AppText(
+            label,
+            style: TextStyle(fontSize: 10, color: isDark ? Colors.white60 : AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

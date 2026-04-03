@@ -33,13 +33,22 @@ class MockAuthService implements AuthService {
   }
 
   @override
+  Future<String> signInWithGoogle(String idToken) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (idToken.trim().isEmpty) {
+      throw Exception('Invalid Google token');
+    }
+    return 'mock_google_token_${Random().nextInt(999999)}';
+  }
+
+  @override
   Future<void> logout(String token) async {
     await Future.delayed(const Duration(milliseconds: 100));
   }
 
   String _generateOtp() {
     final rand = Random();
-    final n = rand.nextInt(900000) + 100000; // 6-digit
+    final n = rand.nextInt(9000) + 1000; // 4-digit
     return n.toString();
   }
 }

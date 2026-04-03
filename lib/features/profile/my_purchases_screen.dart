@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../shared/widgets/micro_interactions.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 import '../../models/story.dart';
+import 'data/profile_repository.dart';
 
 class MyPurchasesScreen extends StatefulWidget {
   const MyPurchasesScreen({super.key});
@@ -13,69 +18,91 @@ class MyPurchasesScreen extends StatefulWidget {
   State<MyPurchasesScreen> createState() => _MyPurchasesScreenState();
 }
 
-class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
   String _selectedFilter = 'Zote';
-  
+
   final List<String> _filters = ['Zote', 'Hadithi', 'Sauti', 'Vitabu'];
+
+  final ProfileRepository _repository = ProfileRepository();
+  bool _isLoading = true;
+  String? _error;
+  PurchasesData _data = const PurchasesData(total: 0, audio: 0, budget: 0, items: []);
+
+  List<Story> get _filteredStories {
+    final all = _data.items;
+    switch (_selectedFilter) {
+      case 'Sauti':
+        return all.where((story) => story.hasAudio).toList();
+      case 'Vitabu':
+        return all.where((story) => !story.hasAudio).toList();
+      case 'Hadithi':
+        return all.where((story) {
+          final haystack = '${story.title} ${story.description} ${story.category}'.toLowerCase();
+          return haystack.contains('hadithi');
+        }).toList();
+      case 'Zote':
+      default:
+        return all;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPurchases());
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _repository.dispose();
     super.dispose();
   }
 
-  // Mock data
-  final List<Story> _purchasedStories = [
-    Story(
-      id: '1',
-      title: 'Simba Mjanja',
-      description: 'Hadithi ya simba aliyejifunza kuwa na hekima',
-      author: 'Juma Bakari',
-      authorId: 'author1',
-      category: 'Adventure',
-      coverImage: 'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=800&q=80',
-      price: 2000,
-      rating: 4.5,
-      totalReviews: 120,
-      isPurchased: true,
-      hasAudio: true,
-      publishedDate: DateTime.now().subtract(const Duration(days: 7)),
-    ),
-    Story(
-      id: '2',
-      title: 'Pembe ya Ndovu',
-      description: 'Safari ya kutafuta pembe iliyopotea',
-      author: 'Amina Hassan',
-      authorId: 'author2',
-      category: 'Folklore',
-      coverImage: 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=800&q=80',
-      price: 1500,
-      rating: 4.8,
-      totalReviews: 85,
-      isPurchased: true,
-      hasAudio: false,
-      publishedDate: DateTime.now().subtract(const Duration(days: 14)),
-    ),
-  ];
+  Future<void> _loadPurchases() async {
+    final token = context.read<AuthProvider>().token;
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = 'Tafadhali ingia tena ili kuona manunuzi yako.';
+      });
+      return;
+    }
+
+    try {
+      final payload = await _repository.fetchPurchases(token);
+      if (!mounted) return;
+      setState(() {
+        _data = payload;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundTop = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundBottom = isDark ? const Color(0xFF2A1B12) : AppColors.warmBeige;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final secondaryText = isDark ? Colors.white70 : AppColors.textSecondary;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.backgroundLight,
-              AppColors.warmBeige,
+              backgroundTop,
+              backgroundBottom,
             ],
           ),
         ),
@@ -97,16 +124,16 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          AppText(
                             'Manunuzi Yangu',
                             style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 24)).copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
-                          Text(
-                            '${_purchasedStories.length} hadithi',
+                          AppText(
+                            '${_data.total} hadithi',
                             style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: secondaryText,
                                 ),
                           ),
                         ],
@@ -142,7 +169,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                                     colors: [AppColors.sunsetOrange, AppColors.deepOrange],
                                   )
                                 : null,
-                            color: isSelected ? null : AppColors.cardBackground,
+                            color: isSelected ? null : cardSurface,
                             borderRadius: BorderRadius.circular(25),
                             boxShadow: isSelected
                                 ? [
@@ -154,7 +181,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                                   ]
                                 : null,
                           ),
-                          child: Text(
+                          child: AppText(
                             filter,
                             style: TextStyle(
                               color: isSelected ? Colors.white : AppColors.textPrimary,
@@ -171,15 +198,44 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
 
               const SizedBox(height: 20),
 
+              StaggeredFadeSlide(
+                order: 0,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
+                  child: NeumorphicCard(
+                    borderRadius: 20,
+                    color: cardSurface,
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        Expanded(child: _buildStatPill('Jumla', '${_data.total}', Icons.menu_book_outlined)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatPill(
+                            'Audio',
+                            '${_data.audio}',
+                            Icons.headphones_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatPill(
+                            'Bajeti',
+                            'TSh ${_data.budget.toStringAsFixed(0)}',
+                            Icons.account_balance_wallet_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
               // Purchased stories list
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
-                  itemCount: _purchasedStories.length,
-                  itemBuilder: (context, index) {
-                    return _buildPurchaseCard(_purchasedStories[index]);
-                  },
-                ),
+                child: _buildListContent(),
               ),
             ],
           ),
@@ -188,7 +244,58 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
     );
   }
 
+  Widget _buildListContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.paddingLarge),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppText(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              ElevatedButton(onPressed: _loadPurchases, child: AppText('Jaribu tena')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final stories = _filteredStories;
+    if (stories.isEmpty) {
+      return const Center(
+        child: AppText(
+          'Hakuna hadithi za kuonyesha kwenye kichujio hiki.',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadPurchases,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge).copyWith(bottom: 40),
+        itemCount: stories.length,
+        itemBuilder: (context, index) {
+          return StaggeredFadeSlide(
+            order: index + 1,
+            child: _buildPurchaseCard(stories[index]),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildPurchaseCard(Story story) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final placeholderSurface = isDark ? const Color(0xFF3A2A20) : AppColors.backgroundLight;
+    final mutedText = isDark ? Colors.white70 : AppColors.textSecondary;
+
     return GestureDetector(
       onTap: () {
         context.push('/story/${story.id}', extra: story);
@@ -197,7 +304,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
         margin: const EdgeInsets.only(bottom: 16),
         child: NeumorphicCard(
           borderRadius: 20,
-          color: AppColors.cardBackground,
+          color: cardSurface,
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -210,11 +317,11 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                   height: 100,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
-                    color: AppColors.backgroundLight,
+                    color: placeholderSurface,
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (context, url, error) => Container(
-                    color: AppColors.backgroundLight,
+                    color: placeholderSurface,
                     child: const Icon(Icons.book, size: 40, color: AppColors.textMuted),
                   ),
                 ),
@@ -226,7 +333,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       story.title,
                       style: const TextStyle(
                         fontSize: 16,
@@ -236,11 +343,11 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    AppText(
                       story.author,
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: mutedText,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -248,7 +355,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                       children: [
                         const Icon(Icons.star, size: 16, color: AppColors.warning),
                         const SizedBox(width: 4),
-                        Text(
+                        AppText(
                           story.rating.toString(),
                           style: const TextStyle(fontSize: 13),
                         ),
@@ -264,7 +371,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                               children: const [
                                 Icon(Icons.headphones, size: 12, color: AppColors.info),
                                 SizedBox(width: 4),
-                                Text(
+                                AppText(
                                   'Audio',
                                   style: TextStyle(
                                     fontSize: 11,
@@ -278,7 +385,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    AppText(
                       'TSh ${story.price.toStringAsFixed(0)}',
                       style: const TextStyle(
                         fontSize: 15,
@@ -294,15 +401,11 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
               Column(
                 children: [
                   NeumorphicIconButton(
-                    icon: Icons.play_circle_filled,
+                    icon: Icons.chrome_reader_mode,
                     size: 40,
                     iconColor: AppColors.sunsetOrange,
                     onPressed: () {
-                      if (story.hasAudio) {
-                        context.push('/audio-player/${story.id}', extra: story);
-                      } else {
-                        context.push('/ebook-reader/${story.id}', extra: story);
-                      }
+                      context.push('/ebook-reader/${story.id}', extra: story);
                     },
                   ),
                   const SizedBox(height: 8),
@@ -312,7 +415,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
                     onPressed: () {
                       // Handle download
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Inapakua...')),
+                        const SnackBar(content: AppText('Inapakua...')),
                       );
                     },
                   ),
@@ -324,4 +427,30 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> with SingleTicker
       ),
     );
   }
+
+  Widget _buildStatPill(String label, String value, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: isDark ? const Color(0x33FFFFFF) : AppColors.warmBeige.withOpacity(0.35),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 16, color: AppColors.sunsetOrange),
+          const SizedBox(height: 4),
+          AppText(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          AppText(
+            label,
+            style: TextStyle(fontSize: 10, color: isDark ? Colors.white60 : AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

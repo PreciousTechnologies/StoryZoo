@@ -1,9 +1,16 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/services/tts_service.dart';
+import '../../core/utils/responsive_utils.dart';
+import '../stories/data/story_repository.dart';
 import '../../shared/widgets/glassmorphic_container.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 import '../../shared/widgets/enhanced_bottom_nav.dart';
@@ -17,7 +24,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PageController _pageController = PageController(viewportFraction: 0.85);
+  late PageController _pageController;
+  final StoryRepository _storyRepository = StoryRepository();
+
+  StreamSubscription<List<Story>>? _storiesSubscription;
   int _currentPage = 0;
   int _selectedNavIndex = 0;
   String _selectedCategory = 'All';
@@ -31,56 +41,54 @@ class _HomeScreenState extends State<HomeScreen> {
     'Biashara': Icons.business_center,
   };
 
-  // Mock data - Replace with actual API calls
-  final List<Story> _featuredStories = [
-    Story(
-      id: '1',
-      title: 'Simba Mjanja',
-      description: 'Hadithi ya simba aliyejifunza kuwa na hekima',
-      author: 'Juma Bakari',
-      authorId: 'author1',
-      category: 'Adventure',
-      coverImage: 'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=800&q=80',
-      price: 2000,
-      rating: 4.5,
-      totalReviews: 120,
-      hasAudio: true,
-      publishedDate: DateTime.now().subtract(const Duration(days: 7)),
-    ),
-    Story(
-      id: '2',
-      title: 'Pembe ya Ndovu',
-      description: 'Safari ya kutafuta pembe iliyopotea',
-      author: 'Amina Hassan',
-      authorId: 'author2',
-      category: 'Folklore',
-      coverImage: 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=800&q=80',
-      price: 1500,
-      rating: 4.8,
-      totalReviews: 85,
-      hasAudio: true,
-      publishedDate: DateTime.now().subtract(const Duration(days: 14)),
-    ),
-    Story(
-      id: '3',
-      title: 'Twiga na Sungura',
-      description: 'Hadithi ya urafiki na ushirikiano',
-      author: 'Mohamed Ali',
-      authorId: 'author3',
-      category: 'Moral Stories',
-      coverImage: 'https://images.unsplash.com/photo-1551316679-9c6ae9dec224?w=800&q=80',
-      price: 1000,
-      rating: 4.3,
-      totalReviews: 65,
-      hasAudio: false,
-      publishedDate: DateTime.now().subtract(const Duration(days: 21)),
-    ),
-  ];
+  List<Story> _allStories = const [];
+
+  List<Story> get _featuredStories {
+    if (_allStories.length <= 5) return _allStories;
+    return _allStories.take(5).toList();
+  }
+
+  List<Story> get _gridStories {
+    if (_selectedCategory == 'All') return _allStories;
+    return _allStories.where((story) => story.category == _selectedCategory).toList();
+  }
+
+  void _openReader(Story story) {
+    context.push('/ebook-reader/${story.id}', extra: story);
+  }
+
+  void _openAudio(Story story) {
+    context.push('/audio-player/${story.id}', extra: story);
+  }
+
+  String _languageTagText(Story story) {
+    return TTSService.languageTagLabel(story.language);
+  }
+
+  Color _languageTagColor(Story story) {
+    return TTSService.normalizeLanguageCode(story.language) == 'en'
+        ? AppColors.clayBlue
+        : AppColors.savannaGreen;
+  }
 
   @override
   void initState() {
     super.initState();
+    // Initialize PageController with a default value - will be recreated in build() with responsive value
+    _pageController = PageController(viewportFraction: 0.85);
+    
+    _storiesSubscription = _storyRepository.streamPublishedStories(limit: 30).listen((stories) {
+      if (!mounted) return;
+      setState(() {
+        _allStories = stories;
+        if (_currentPage >= _featuredStories.length) {
+          _currentPage = _featuredStories.isEmpty ? 0 : _featuredStories.length - 1;
+        }
+      });
+    });
+
     _pageController.addListener(() {
+      if (_featuredStories.isEmpty) return;
       final page = _pageController.page;
       if (page == null || !mounted) return;
       final next = page.round().clamp(0, _featuredStories.length - 1);
@@ -93,21 +101,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _storiesSubscription?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isAuthor = context.watch<AuthProvider>().isAuthor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundTop = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundBottom = isDark ? const Color(0xFF2A1B12) : AppColors.warmBeige;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppColors.backgroundLight,
-              AppColors.warmBeige,
+              backgroundTop,
+              backgroundBottom,
             ],
           ),
         ),
@@ -117,23 +131,23 @@ class _HomeScreenState extends State<HomeScreen> {
               // App Bar
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(AppConstants.paddingLarge),
+                  padding: EdgeInsets.all(ResponsiveUtils.getPadding(context)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          AppText(
                             'Karibu! 👋',
                             style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 20)).copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: isDark ? Colors.white70 : AppColors.textSecondary,
                                 ),
                           ),
-                          Text(
+                          AppText(
                             'Story Zoo',
                             style: (Theme.of(context).textTheme.displaySmall ?? const TextStyle(fontSize: 32)).copyWith(
-                                  color: AppColors.textPrimary,
+                                  color: isDark ? Colors.white : AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -143,15 +157,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           NeumorphicIconButton(
                             icon: Icons.search,
-                            size: 50,
+                            size: ResponsiveUtils.getIconButtonSize(context),
                             onPressed: () {
                               // Navigate to search
                             },
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: ResponsiveUtils.getSpacing(context)),
                           NeumorphicIconButton(
                             icon: Icons.notifications_outlined,
-                            size: 50,
+                            size: ResponsiveUtils.getIconButtonSize(context),
                             onPressed: () {
                               // Show notifications
                             },
@@ -169,26 +183,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
-                      child: Text(
+                      padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
+                      child: AppText(
                         'Hadithi Maarufu',
                         style: (Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 24)).copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                     ),
-                    const SizedBox(height: AppConstants.paddingMedium),
-                    SizedBox(
-                      height: 320,
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _featuredStories.length,
-                        itemBuilder: (context, index) {
-                          return _buildFeaturedCard(_featuredStories[index], index);
-                        },
+                    SizedBox(height: ResponsiveUtils.getSpacing(context)),
+                    if (_featuredStories.isEmpty)
+                      SizedBox(
+                        height: ResponsiveUtils.getFeaturedCardImageHeight(context) * 0.7,
+                        child: const Center(
+                          child: AppText('Hakuna hadithi zilizochapishwa kwa sasa.'),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        height: ResponsiveUtils.getCarouselHeight(context),
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: _featuredStories.length,
+                          itemBuilder: (context, index) {
+                            return _buildFeaturedCard(_featuredStories[index], index);
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppConstants.paddingMedium),
+                    SizedBox(height: ResponsiveUtils.getSpacing(context)),
                     // Page indicators
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -201,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: AppConstants.paddingLarge)),
+              SliverToBoxAdapter(child: SizedBox(height: ResponsiveUtils.getPadding(context))),
 
               // Category Cards Section
               SliverToBoxAdapter(
@@ -209,11 +231,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
+                      padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          AppText(
                             'Kategoria za Hadithi',
                             style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
                                   fontWeight: FontWeight.bold,
@@ -223,17 +245,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: () {
                               context.go('/explore');
                             },
-                            child: const Text('Angalia Zote'),
+                            child: AppText('Angalia Zote'),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: ResponsiveUtils.getSpacing(context)),
                     SizedBox(
-                      height: 110,
+                      height: ResponsiveUtils.getHorizontalItemHeight(context),
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
+                        padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
                         itemCount: _categories.length,
                         itemBuilder: (context, index) {
                           return _buildCategoryCard(_categories[index], _categoryIcons[_categories[index]]!);
@@ -244,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: AppConstants.paddingLarge)),
+              SliverToBoxAdapter(child: SizedBox(height: ResponsiveUtils.getPadding(context))),
 
               // Quick Filter Chips
               SliverToBoxAdapter(
@@ -252,20 +274,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
-                      child: Text(
+                      padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
+                      child: AppText(
                         'Chagua Hadithi',
                         style: (Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 16)).copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                       ),
                     ),
-                    const SizedBox(height: AppConstants.paddingMedium),
+                    SizedBox(height: ResponsiveUtils.getSpacing(context)),
                     SizedBox(
-                      height: 45,
+                      height: ResponsiveUtils.getButtonHeight(context) * 0.8,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+                        padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getSpacing(context)),
                         itemCount: AppConstants.storyCategories.length + 1,
                         itemBuilder: (context, index) {
                           if (index == 0) {
@@ -282,32 +304,40 @@ class _HomeScreenState extends State<HomeScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: AppConstants.paddingLarge)),
 
               // Story Grid
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.7,
-                    crossAxisSpacing: AppConstants.paddingMedium,
-                    mainAxisSpacing: AppConstants.paddingMedium,
+              if (_gridStories.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
+                    child: AppText('Hakuna hadithi kwenye kategoria hii.'),
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return _buildStoryCard(_featuredStories[index % _featuredStories.length]);
-                    },
-                    childCount: 6,
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: ResponsiveUtils.getGridColumnCount(context),
+                      childAspectRatio: ResponsiveUtils.getGridAspectRatio(context),
+                      crossAxisSpacing: ResponsiveUtils.getSpacing(context),
+                      mainAxisSpacing: ResponsiveUtils.getSpacing(context),
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return _buildStoryCard(_gridStories[index]);
+                      },
+                      childCount: _gridStories.length,
+                    ),
                   ),
                 ),
-              ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: AppConstants.paddingLarge)),
+              SliverToBoxAdapter(child: SizedBox(height: ResponsiveUtils.getPadding(context))),
             ],
           ),
         ),
       ),
       bottomNavigationBar: EnhancedBottomNav(
         currentIndex: _selectedNavIndex,
-        isAuthor: true, // Set to true to show author dashboard button
+        isAuthor: isAuthor,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -333,6 +363,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFeaturedCard(Story story, int index) {
     final scale = _currentPage == index ? 1.0 : 0.9;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final mutedColor = isDark ? Colors.white70 : AppColors.textMuted;
+    final placeholderAccent = isDark ? AppColors.warmBeige : Colors.white;
     
     return TweenAnimationBuilder<double>(
       duration: AppConstants.mediumAnimation,
@@ -342,20 +376,20 @@ class _HomeScreenState extends State<HomeScreen> {
           scale: value,
           child: GestureDetector(
             onTap: () {
-              context.push('/story/${story.id}', extra: story);
+              _openReader(story);
             },
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 8),
               child: NeumorphicCard(
                 borderRadius: 30,
-                color: AppColors.cardBackground,
+                color: surfaceColor,
                 padding: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Cover image
                     SizedBox(
-                      height: 200,
+                      height: ResponsiveUtils.getFeaturedCardImageHeight(context),
                       child: Stack(
                         children: [
                           ClipRRect(
@@ -365,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     imageUrl: story.coverImage,
                                     fit: BoxFit.cover,
                                     width: double.infinity,
-                                    height: 200,
+                                    height: ResponsiveUtils.getFeaturedCardImageHeight(context),
                                     placeholder: (context, url) => Container(
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
@@ -375,8 +409,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ],
                                         ),
                                       ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(color: Colors.white),
+                                      child: Center(
+                                        child: CircularProgressIndicator(color: placeholderAccent),
                                       ),
                                     ),
                                     errorWidget: (context, url, error) => Container(
@@ -388,11 +422,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ],
                                         ),
                                       ),
-                                      child: const Center(
+                                      child: Center(
                                         child: Icon(
                                           Icons.menu_book_rounded,
                                           size: 80,
-                                          color: Colors.white,
+                                          color: placeholderAccent,
                                         ),
                                       ),
                                     ),
@@ -406,11 +440,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ],
                                       ),
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: Icon(
                                         Icons.menu_book_rounded,
                                         size: 80,
-                                        color: Colors.white,
+                                        color: placeholderAccent,
                                       ),
                                     ),
                                   ),
@@ -432,57 +466,142 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
+                          Positioned(
+                            top: 12,
+                            left: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _languageTagColor(story),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.18),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: AppText(
+                                _languageTagText(story),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            story.title,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            story.author,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(Icons.star, color: AppColors.warning, size: 14),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  '${story.rating} (${story.totalReviews})',
-                                  style: const TextStyle(fontSize: 11),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.all(ResponsiveUtils.getSpacing(context) * 0.5),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            AppText(
+                              story.title,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'TSh ${story.price}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.sunsetOrange,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            AppText(
+                              story.author,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: mutedColor,
                               ),
-                            ],
-                          ),
-                        ],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(Icons.star, color: AppColors.warning, size: 14),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: AppText(
+                                    '${story.rating} (${story.totalReviews})',
+                                    style: const TextStyle(fontSize: 11),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: AppText(
+                                    'TSh ${story.price.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.sunsetOrange,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: NeumorphicButton(
+                                    onPressed: () => _openReader(story),
+                                    height: 32,
+                                    borderRadius: 14,
+                                    color: AppColors.savannaGreen,
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    child: const FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.menu_book_rounded, color: Colors.white, size: 14),
+                                          SizedBox(width: 4),
+                                          AppText(
+                                            'Read',
+                                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: NeumorphicButton(
+                                    onPressed: () => _openAudio(story),
+                                    height: 32,
+                                    borderRadius: 14,
+                                    color: story.hasAudio ? AppColors.sunsetOrange : mutedColor,
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.headphones, color: Colors.white, size: 14),
+                                          const SizedBox(width: 4),
+                                          AppText(
+                                            'Listen',
+                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -510,6 +629,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategoryChip(String category) {
     final isSelected = _selectedCategory == category;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final chipBackground = isDark ? const Color(0x55FFFFFF) : AppColors.glassWhite;
+    final chipTextColor = isDark ? Colors.white : AppColors.textPrimary;
     
     return GestureDetector(
       onTap: () {
@@ -525,15 +647,18 @@ class _HomeScreenState extends State<HomeScreen> {
           blur: 8,
           color: isSelected
               ? AppColors.sunsetOrange.withOpacity(0.3)
-              : AppColors.glassWhite,
+              : chipBackground,
           borderColor: isSelected ? AppColors.sunsetOrange : AppColors.glassBorder,
           borderWidth: isSelected ? 2 : 1.5,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveUtils.getSpacing(context) * 1.2,
+            vertical: ResponsiveUtils.getSpacing(context) * 0.7,
+          ),
           child: Center(
-            child: Text(
+            child: AppText(
               category,
               style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
-                    color: isSelected ? AppColors.sunsetOrange : AppColors.textPrimary,
+                  color: isSelected ? AppColors.sunsetOrange : chipTextColor,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
             ),
@@ -544,82 +669,111 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStoryCard(Story story) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final mutedColor = isDark ? Colors.white70 : AppColors.textMuted;
+    final placeholderAccent = isDark ? AppColors.warmBeige : Colors.white;
+
     return GestureDetector(
       onTap: () {
-        context.push('/story/${story.id}', extra: story);
+        _openReader(story);
       },
       child: NeumorphicCard(
         borderRadius: 24,
         padding: EdgeInsets.zero,
-        color: AppColors.cardBackground,
+        color: surfaceColor,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Cover
             Expanded(
               flex: 3,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                child: story.coverImage.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: story.coverImage,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        placeholder: (context, url) => Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppColors.clayBlue.withOpacity(0.7),
-                                AppColors.clayPink.withOpacity(0.7),
-                              ],
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    child: story.coverImage.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: story.coverImage,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            placeholder: (context, url) => Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppColors.clayBlue.withOpacity(0.7),
+                                    AppColors.clayPink.withOpacity(0.7),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: CircularProgressIndicator(color: placeholderAccent),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppColors.clayBlue.withOpacity(0.7),
+                                    AppColors.clayPink.withOpacity(0.7),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.auto_stories,
+                                  size: 50,
+                                  color: placeholderAccent,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.clayBlue.withOpacity(0.7),
+                                  AppColors.clayPink.withOpacity(0.7),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.auto_stories,
+                                size: 50,
+                                color: placeholderAccent,
+                              ),
                             ),
                           ),
-                          child: const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppColors.clayBlue.withOpacity(0.7),
-                                AppColors.clayPink.withOpacity(0.7),
-                              ],
-                            ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.auto_stories,
-                              size: 50,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              AppColors.clayBlue.withOpacity(0.7),
-                              AppColors.clayPink.withOpacity(0.7),
-                            ],
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.auto_stories,
-                            size: 50,
-                            color: Colors.white,
-                          ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _languageTagColor(story),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: AppText(
+                        _languageTagText(story),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
                         ),
                       ),
+                    ),
+                  ),
+                ],
               ),
             ),
             // Info
@@ -632,7 +786,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Flexible(
-                      child: Text(
+                      child: AppText(
                         story.title,
                         style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
                               fontWeight: FontWeight.w600,
@@ -651,16 +805,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               const Icon(Icons.star, color: AppColors.warning, size: 12),
                               const SizedBox(width: 2),
-                              Text(
+                              AppText(
                                 '${story.rating}',
-                                style: const TextStyle(fontSize: 11),
+                                style: TextStyle(fontSize: 11, color: mutedColor),
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(
+                          child: AppText(
                             'TSh ${story.price}',
                             style: const TextStyle(
                               fontSize: 11,
@@ -668,6 +822,64 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _openReader(story),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.savannaGreen,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.chrome_reader_mode, color: Colors.white, size: 12),
+                                    SizedBox(width: 3),
+                                    AppText(
+                                      'Read',
+                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _openAudio(story),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              decoration: BoxDecoration(
+                                color: story.hasAudio ? AppColors.sunsetOrange : mutedColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.headphones, color: Colors.white, size: 12),
+                                    const SizedBox(width: 3),
+                                    AppText(
+                                      'Listen',
+                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -683,6 +895,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryCard(String category, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+
     final colors = [
       [AppColors.clayPink, AppColors.peachOrange],
       [AppColors.clayBlue, AppColors.info],
@@ -691,10 +906,12 @@ class _HomeScreenState extends State<HomeScreen> {
       [AppColors.clayPurple, AppColors.sunsetOrange],
     ];
     final colorIndex = _categories.indexOf(category) % colors.length;
+    final categoryWidth = ResponsiveUtils.getHorizontalItemHeight(context) * 0.9;
+    final categoryMargin = ResponsiveUtils.getSpacing(context) * 0.5;
 
     return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
+      width: categoryWidth,
+      margin: EdgeInsets.only(right: categoryMargin),
       child: GestureDetector(
         onTap: () {
           setState(() {
@@ -702,26 +919,26 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         child: NeumorphicCard(
-          borderRadius: 20,
-          padding: const EdgeInsets.all(12),
-          color: AppColors.cardBackground,
+          borderRadius: ResponsiveUtils.getBorderRadius(context),
+          padding: EdgeInsets.all(ResponsiveUtils.getSpacing(context) * 0.5),
+          color: surfaceColor,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(ResponsiveUtils.getSpacing(context) * 0.5),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: colors[colorIndex],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.getBorderRadius(context) * 0.6),
                 ),
-                child: Icon(icon, color: Colors.white, size: 24),
+                child: Icon(icon, color: Colors.white, size: ResponsiveUtils.getIconButtonSize(context) * 0.5),
               ),
-              const SizedBox(height: 8),
-              Text(
+              SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.3),
+              AppText(
                 category,
                 style: const TextStyle(
                   fontSize: 12,
@@ -738,3 +955,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

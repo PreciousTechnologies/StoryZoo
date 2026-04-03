@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants/app_colors.dart';
@@ -21,6 +22,31 @@ class StoryDetailsScreen extends StatefulWidget {
 }
 
 class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
+  int? get _bookId {
+    return int.tryParse(widget.story.id);
+  }
+
+  void _openReader() {
+    final bookId = _bookId;
+    if (bookId == null || bookId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: AppText('Kitambulisho cha kitabu si sahihi.')),
+      );
+      return;
+    }
+    context.push('/ebook-reader/$bookId', extra: widget.story);
+  }
+
+  void _startBookPurchase() {
+    final bookId = _bookId;
+    if (bookId == null || bookId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: AppText('Imeshindikana kuanza malipo kwa kitabu hiki.')),
+      );
+      return;
+    }
+    context.push('/subscribe', extra: bookId);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,7 +186,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                           children: [
                             const Icon(Icons.headphones, color: Colors.white, size: 18),
                             const SizedBox(width: 6),
-                            Text(
+                            AppText(
                               'Audio Available',
                               style: (Theme.of(context).textTheme.bodySmall ?? const TextStyle(fontSize: 12)).copyWith(
                                     color: Colors.white,
@@ -193,7 +219,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Title
-                        Text(
+                        AppText(
                           widget.story.title,
                           style: (Theme.of(context).textTheme.displaySmall ?? const TextStyle(fontSize: 32)).copyWith(
                                 fontWeight: FontWeight.bold,
@@ -207,7 +233,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                           children: [
                             const Icon(Icons.person, size: 20, color: AppColors.textSecondary),
                             const SizedBox(width: 8),
-                            Text(
+                            AppText(
                               'na ${widget.story.author}',
                               style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
                                     color: AppColors.textSecondary,
@@ -267,7 +293,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    AppText(
                                       'Bei',
                                       style: TextStyle(
                                         fontSize: 12,
@@ -275,7 +301,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
+                                    AppText(
                                       'TSh ${widget.story.price.toStringAsFixed(0)}',
                                       style: const TextStyle(
                                         fontSize: 28,
@@ -288,7 +314,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                       children: [
                                         const Icon(Icons.check_circle, size: 14, color: AppColors.success),
                                         const SizedBox(width: 4),
-                                        Text(
+                                        AppText(
                                           widget.story.hasAudio ? 'Audiobook + eBook' : 'eBook',
                                           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                                         ),
@@ -319,7 +345,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                   children: [
                                     Icon(Icons.play_circle_outline, size: 32, color: AppColors.info),
                                     SizedBox(height: 4),
-                                    Text(
+                                    AppText(
                                       'Preview',
                                       style: TextStyle(
                                         fontSize: 10,
@@ -340,14 +366,14 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                         const SizedBox(height: 20),
                         
                         // Description
-                        Text(
+                        AppText(
                           'Kuhusu Hadithi',
                           style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
                         const SizedBox(height: 12),
-                        Text(
+                        AppText(
                           widget.story.description,
                           style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
                                 height: 1.6,
@@ -374,7 +400,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                           height: 56,
                           child: NeumorphicButton(
                             onPressed: () {
-                              _showBuyDialog();
+                              _startBookPurchase();
                             },
                             color: AppColors.sunsetOrange,
                             height: 56,
@@ -384,7 +410,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                               children: [
                                 const Icon(Icons.shopping_cart, color: Colors.white, size: 24),
                                 const SizedBox(width: 12),
-                                Text(
+                                AppText(
                                   'Nunua Sasa - TSh ${widget.story.price.toStringAsFixed(0)}',
                                   style: const TextStyle(
                                     color: Colors.white,
@@ -404,7 +430,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                             Expanded(
                               child: NeumorphicButton(
                                 onPressed: () {
-                                  context.push('/ebook-reader/${widget.story.id}', extra: widget.story);
+                                  _openReader();
                                 },
                                 color: AppColors.success,
                                 height: 56,
@@ -414,7 +440,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                   children: [
                                     Icon(Icons.menu_book, color: Colors.white, size: 22),
                                     SizedBox(width: 8),
-                                    Text(
+                                    AppText(
                                       'Soma',
                                       style: TextStyle(
                                         color: Colors.white,
@@ -442,7 +468,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                     children: [
                                       Icon(Icons.headphones, color: Colors.white, size: 22),
                                       SizedBox(width: 8),
-                                      Text(
+                                      AppText(
                                         'Sikiliza',
                                         style: TextStyle(
                                           color: Colors.white,
@@ -470,7 +496,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                         Expanded(
                           child: NeumorphicButton(
                             onPressed: () {
-                              // Navigate to reader
+                              _openReader();
                           },
                           color: AppColors.sunsetOrange,
                           height: 65,
@@ -482,7 +508,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                               const Icon(Icons.menu_book, color: Colors.white, size: 22),
                               const SizedBox(width: 8),
                               Flexible(
-                                child: Text(
+                                child: AppText(
                                   'Soma',
                                   style: const TextStyle(
                                     fontSize: 18,
@@ -523,7 +549,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                               ),
                               const SizedBox(width: 8),
                               Flexible(
-                                child: Text(
+                                child: AppText(
                                   'Sikiliza',
                                   style: TextStyle(
                                     fontSize: 18,
@@ -553,14 +579,14 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              AppText(
                                 'Bei',
                                 style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
                                       color: AppColors.textMuted,
                                     ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
+                              AppText(
                                 'TSh ${widget.story.price}',
                                 style: (Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 24)).copyWith(
                                       color: AppColors.sunsetOrange,
@@ -571,13 +597,13 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                           ),
                           NeumorphicButton(
                             onPressed: () {
-                              // Handle purchase
+                              _startBookPurchase();
                             },
                             color: AppColors.sunsetOrange,
                             width: 140,
                             height: 50,
                             borderRadius: 25,
-                            child: Text(
+                            child: AppText(
                               'Nunua Sasa',
                               style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
                                     color: Colors.white,
@@ -596,7 +622,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      AppText(
                         'Maoni ya Wasomaji',
                         style: (Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 24)).copyWith(
                               fontWeight: FontWeight.bold,
@@ -632,7 +658,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         children: [
           Icon(icon, size: 15, color: color),
           const SizedBox(width: 5),
-          Text(
+          AppText(
             label,
             style: TextStyle(
               fontSize: 12,
@@ -659,7 +685,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: AppColors.clayBlue,
-                  child: Text(
+                  child: AppText(
                     'M${index + 1}',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
@@ -669,7 +695,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      AppText(
                         'Msomaji ${index + 1}',
                         style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
                               fontWeight: FontWeight.w600,
@@ -691,7 +717,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
+            AppText(
               'Hadithi nzuri sana! Nimependa jinsi mwandishi alivyoelezea matukio. Inanishika toka mwanzo hadi mwisho.',
               style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
                     color: AppColors.textSecondary,
@@ -713,7 +739,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           children: [
             Icon(Icons.play_circle, color: AppColors.info),
             SizedBox(width: 12),
-            Text('Preview', style: TextStyle(fontSize: 18)),
+            AppText('Preview', style: TextStyle(fontSize: 18)),
           ],
         ),
         content: Column(
@@ -729,7 +755,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                 children: [
                   Icon(Icons.headphones, size: 48, color: AppColors.info),
                   SizedBox(height: 12),
-                  Text(
+                  AppText(
                     'Sikiliza dondoo la kwanza la hadithi hii',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14),
@@ -738,7 +764,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            AppText(
               'Preview hii inakuruhusu kusikiliza dakika 2 za kwanza za audiobook.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
@@ -748,7 +774,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Funga'),
+            child: AppText('Funga'),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -756,7 +782,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               // Play preview
             },
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Cheza Preview'),
+            label: AppText('Cheza Preview'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.info,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -776,19 +802,19 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           children: [
             Icon(Icons.shopping_cart, color: AppColors.sunsetOrange),
             SizedBox(width: 12),
-            Text('Thibitisha Ununuzi', style: TextStyle(fontSize: 18)),
+            AppText('Thibitisha Ununuzi', style: TextStyle(fontSize: 18)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            AppText(
               widget.story.title,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
+            AppText(
               'na ${widget.story.author}',
               style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
@@ -798,8 +824,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Bei:', style: TextStyle(fontSize: 14)),
-                Text(
+                AppText('Bei:', style: TextStyle(fontSize: 14)),
+                AppText(
                   'TSh ${widget.story.price.toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 18,
@@ -824,7 +850,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                       const Icon(Icons.check_circle, size: 14, color: AppColors.success),
                       const SizedBox(width: 6),
                       Flexible(
-                        child: const Text('Unachopata:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                        child: AppText('Unachopata:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -841,14 +867,14 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Ghairi'),
+            child: AppText('Ghairi'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Ununuzi umekamilika! Karibu katika maktaba yako.'),
+                  content: AppText('Ununuzi umekamilika! Karibu katika maktaba yako.'),
                   backgroundColor: AppColors.success,
                   duration: Duration(seconds: 3),
                 ),
@@ -859,7 +885,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Nunua Sasa', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: AppText('Nunua Sasa', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -874,10 +900,11 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           const Icon(Icons.check, size: 12, color: AppColors.success),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 11)),
+            child: AppText(text, style: const TextStyle(fontSize: 11)),
           ),
         ],
       ),
     );
   }
 }
+

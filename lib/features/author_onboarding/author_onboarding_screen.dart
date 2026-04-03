@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../shared/widgets/glassmorphic_container.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 
@@ -15,6 +18,7 @@ class AuthorOnboardingScreen extends StatefulWidget {
 class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
   int _currentStep = 0;
   final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
   
   // Form data
   final TextEditingController _nameController = TextEditingController();
@@ -101,7 +105,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
+                          AppText(
                             'Kuwa Mwandishi',
                             style: TextStyle(
                               fontSize: 18,
@@ -110,7 +114,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
+                          AppText(
                             'Hatua ${_currentStep + 1} ya ${_steps.length}',
                             style: const TextStyle(
                               fontSize: 12,
@@ -161,15 +165,28 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
               Padding(
                 padding: const EdgeInsets.all(AppConstants.paddingLarge),
                 child: NeumorphicButton(
-                  onPressed: _handleNext,
+                  onPressed: _isSubmitting ? null : _handleNext,
                   color: _steps[_currentStep]['color'] as Color,
                   height: 56,
                   borderRadius: 28,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        _currentStep == _steps.length - 1 ? 'Maliza na Anzisha' : 'Endelea',
+                      if (_isSubmitting) ...[
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      AppText(
+                        _isSubmitting
+                            ? 'Inawasilisha...'
+                            : (_currentStep == _steps.length - 1 ? 'Maliza na Anzisha' : 'Endelea'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -227,7 +244,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
           child: const Icon(Icons.edit_note, size: 50, color: Colors.white),
         ),
         const SizedBox(height: 20),
-        Text(
+        AppText(
           'Karibu kwenye jamii ya waandishi!',
           style: TextStyle(
             fontSize: 20,
@@ -239,7 +256,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 12),
-        Text(
+        AppText(
           'Pata fursa ya kushiriki hadithi zako na kupata mapato kutoka kwa wasomaji na wasikilizaji wengi.',
           style: TextStyle(
             fontSize: 13,
@@ -284,7 +301,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
           const SizedBox(height: 20),
           const Icon(Icons.person, size: 60, color: AppColors.info),
           const SizedBox(height: 20),
-          const Text(
+          AppText(
             'Taarifa Binafsi',
             style: TextStyle(
               fontSize: 24,
@@ -292,7 +309,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          AppText(
             'Tuambie juu yako ili wasomaji wakujue zaidi',
             style: TextStyle(
               fontSize: 14,
@@ -352,7 +369,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
         const SizedBox(height: 20),
         const Icon(Icons.account_balance, size: 60, color: AppColors.success),
         const SizedBox(height: 20),
-        const Text(
+        AppText(
           'Taarifa za Malipo',
           style: TextStyle(
             fontSize: 24,
@@ -360,7 +377,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        AppText(
           'Weka taarifa za kupokea mapato yako',
           style: TextStyle(
             fontSize: 14,
@@ -390,7 +407,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
+                      child: AppText(
                         'Malipo yanafanywa mwishoni mwa kila mwezi kupitia M-PESA au benki',
                         style: TextStyle(
                           fontSize: 13,
@@ -425,7 +442,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
               Icon(Icons.percent, color: AppColors.warning, size: 20),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: AppText(
                   'Unapata 70% ya kila mauzo. StoryZoo inachukua 30% kwa huduma za app.',
                   style: TextStyle(
                     fontSize: 12,
@@ -447,7 +464,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
         const SizedBox(height: 20),
         const Icon(Icons.check_circle, size: 60, color: AppColors.clayPurple),
         const SizedBox(height: 20),
-        const Text(
+        AppText(
           'Masharti ya Huduma',
           style: TextStyle(
             fontSize: 24,
@@ -455,7 +472,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        AppText(
           'Tafadhali soma na ukubali masharti',
           style: TextStyle(
             fontSize: 14,
@@ -514,7 +531,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
+                  child: AppText(
                     'Ninakubali masharti na vigezo vya StoryZoo',
                     style: TextStyle(
                       fontSize: 14,
@@ -562,7 +579,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  AppText(
                     title,
                     style: const TextStyle(
                       fontSize: 13,
@@ -573,7 +590,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  AppText(
                     description,
                     style: const TextStyle(
                       fontSize: 11,
@@ -603,7 +620,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           label,
           style: const TextStyle(
             fontSize: 14,
@@ -645,7 +662,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
           const Icon(Icons.check, size: 18, color: AppColors.success),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
+            child: AppText(
               text,
               style: const TextStyle(
                 fontSize: 13,
@@ -672,7 +689,7 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
       if (!_agreedToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Tafadhali kubali masharti ili uendelee'),
+            content: AppText('Tafadhali kubali masharti ili uendelee'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -690,16 +707,44 @@ class _AuthorOnboardingScreenState extends State<AuthorOnboardingScreen> {
     });
   }
   
-  void _completeOnboarding() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Hongera! Sasa wewe ni mwandishi wa StoryZoo!'),
-        backgroundColor: AppColors.success,
-        duration: Duration(seconds: 3),
-      ),
-    );
-    
-    // Navigate to author dashboard
-    context.go('/author-dashboard');
+  Future<void> _completeOnboarding() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await context.read<AuthProvider>().cachePendingAuthorOnboarding(
+            fullName: _nameController.text,
+            bio: _bioController.text,
+            phone: _phoneController.text,
+            payoutAccount: _bankAccountController.text,
+          );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: AppText('Hatua imekamilika. Ingia kuthibitisha akaunti ya mwandishi.'),
+          backgroundColor: AppColors.success,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      context.go('/login');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: AppText('Imeshindikana kuhifadhi taarifa za usajili: $error'),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 }
+

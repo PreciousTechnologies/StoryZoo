@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/i18n/app_i18n.dart';
+import '../../shared/widgets/micro_interactions.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 
 class PaymentsScreen extends StatefulWidget {
@@ -59,15 +62,21 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundTop = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundBottom = isDark ? const Color(0xFF2A1B12) : AppColors.warmBeige;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final secondaryText = isDark ? Colors.white70 : AppColors.textSecondary;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.backgroundLight,
-              AppColors.warmBeige,
+              backgroundTop,
+              backgroundBottom,
             ],
           ),
         ),
@@ -89,16 +98,16 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          AppText(
                             'Malipo',
                             style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 24)).copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
-                          Text(
+                          AppText(
                             'Njia za malipo',
                             style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: secondaryText,
                                 ),
                           ),
                         ],
@@ -112,8 +121,48 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
                   children: [
+                    StaggeredFadeSlide(
+                      order: 0,
+                      child: NeumorphicCard(
+                        borderRadius: 22,
+                        color: cardSurface,
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.account_balance_wallet_rounded, color: AppColors.savannaGreen),
+                              SizedBox(width: 8),
+                              AppText(
+                                'Wallet Summary',
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          AppText(
+                            'TSh 48,000',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 28,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          AppText(
+                            'Matumizi mwezi huu: TSh 8,500',
+                            style: TextStyle(fontSize: 12, color: secondaryText),
+                          ),
+                        ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
                     // Payment methods section
-                    const Text(
+                    AppText(
                       'Njia za Malipo',
                       style: TextStyle(
                         fontSize: 18,
@@ -122,7 +171,10 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    ..._paymentMethods.map((method) => _buildPaymentMethodCard(method)).toList(),
+                    ..._paymentMethods.map((method) {
+                      final index = _paymentMethods.indexOf(method);
+                      return StaggeredFadeSlide(order: index + 1, child: _buildPaymentMethodCard(method));
+                    }).toList(),
 
                     const SizedBox(height: 12),
 
@@ -139,7 +191,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                         children: [
                           Icon(Icons.add_circle_outline, color: Colors.white),
                           SizedBox(width: 12),
-                          Text(
+                          AppText(
                             'Ongeza Njia ya Malipo',
                             style: TextStyle(
                               color: Colors.white,
@@ -154,7 +206,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     const SizedBox(height: 32),
 
                     // Transaction history
-                    const Text(
+                    AppText(
                       'Historia ya Malipo',
                       style: TextStyle(
                         fontSize: 18,
@@ -163,9 +215,57 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    ..._transactions.map((transaction) => _buildTransactionCard(transaction)).toList(),
+                    ..._transactions.map((transaction) {
+                      final index = _transactions.indexOf(transaction);
+                      return StaggeredFadeSlide(order: index + 4, child: _buildTransactionCard(transaction));
+                    }).toList(),
 
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 120),
+
+                    // Subscription CTA
+                    NeumorphicCard(
+                      borderRadius: 22,
+                      color: cardSurface,
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const AppText(
+                            'Story Zoo Premium',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                          ),
+                          const SizedBox(height: 6),
+                          AppText(
+                            'Lipa kwa Pesapal na fungua vipengele vya ziada.',
+                            style: TextStyle(fontSize: 12, color: secondaryText),
+                          ),
+                          const SizedBox(height: 12),
+                          NeumorphicButton(
+                            onPressed: () {
+                              context.push('/subscribe');
+                            },
+                            color: AppColors.sunsetOrange,
+                            height: 52,
+                            borderRadius: 18,
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.lock_outline, color: Colors.white),
+                                SizedBox(width: 10),
+                                AppText(
+                                  'Lipa Premium',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -177,11 +277,13 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   }
 
   Widget _buildPaymentMethodCard(Map<String, dynamic> method) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: NeumorphicCard(
         borderRadius: 20,
-        color: AppColors.cardBackground,
+        color: isDark ? const Color(0xFF2F2118) : AppColors.cardBackground,
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -201,7 +303,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(
+                      AppText(
                         method['name'],
                         style: const TextStyle(
                           fontSize: 16,
@@ -216,7 +318,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                             color: AppColors.success.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
+                          child: AppText(
                             'Chaguo-msingi',
                             style: TextStyle(
                               fontSize: 10,
@@ -228,18 +330,18 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  AppText(
                     method['number'],
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: isDark ? Colors.white70 : AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
             PopupMenuButton(
-              icon: const Icon(Icons.more_vert, color: AppColors.textMuted),
+              icon: Icon(Icons.more_vert, color: isDark ? Colors.white60 : AppColors.textMuted),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               itemBuilder: (context) => [
                 if (!method['isDefault'])
@@ -249,7 +351,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                       children: [
                         Icon(Icons.check_circle_outline, size: 20, color: AppColors.textPrimary),
                         SizedBox(width: 12),
-                        Text('Weka Chaguo-msingi'),
+                        AppText('Weka Chaguo-msingi'),
                       ],
                     ),
                   ),
@@ -259,7 +361,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     children: [
                       Icon(Icons.edit_outlined, size: 20, color: AppColors.textPrimary),
                       SizedBox(width: 12),
-                      Text('Hariri'),
+                      AppText('Hariri'),
                     ],
                   ),
                 ),
@@ -269,7 +371,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     children: [
                       Icon(Icons.delete_outline, size: 20, color: AppColors.error),
                       SizedBox(width: 12),
-                      Text('Futa', style: TextStyle(color: AppColors.error)),
+                      AppText('Futa', style: TextStyle(color: AppColors.error)),
                     ],
                   ),
                 ),
@@ -284,7 +386,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     }
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${method['name']} imewekwa kuwa chaguo-msingi')),
+                    SnackBar(content: AppText('${method['name']} imewekwa kuwa chaguo-msingi')),
                   );
                 }
               },
@@ -296,12 +398,14 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   }
 
   Widget _buildTransactionCard(Map<String, dynamic> transaction) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final isNegative = transaction['amount'] < 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: NeumorphicCard(
         borderRadius: 16,
-        color: AppColors.cardBackground,
+        color: isDark ? const Color(0xFF2F2118) : AppColors.cardBackground,
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -325,7 +429,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AppText(
                     transaction['title'],
                     style: const TextStyle(
                       fontSize: 15,
@@ -333,11 +437,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  AppText(
                     transaction['date'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textMuted,
+                      color: isDark ? Colors.white60 : AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -346,7 +450,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
+                AppText(
                   'TSh ${transaction['amount'].abs().toStringAsFixed(0)}',
                   style: TextStyle(
                     fontSize: 16,
@@ -361,7 +465,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     color: AppColors.success.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(
+                  child: AppText(
                     transaction['status'],
                     style: const TextStyle(
                       fontSize: 10,
@@ -383,14 +487,14 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Ongeza Njia ya Malipo'),
+        title: AppText('Ongeza Njia ya Malipo'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               decoration: InputDecoration(
-                labelText: 'Namba ya Simu',
-                hintText: '+255 7XX XXX XXX',
+                labelText: context.tr('Namba ya Simu'),
+                hintText: context.tr('+255 7XX XXX XXX'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               keyboardType: TextInputType.phone,
@@ -398,13 +502,13 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
-                labelText: 'Chagua Mtoa Huduma',
+                labelText: context.tr('Chagua Mtoa Huduma'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               items: ['M-Pesa', 'Tigopesa', 'Airtel Money', 'Halopesa']
                   .map((provider) => DropdownMenuItem(
                         value: provider,
-                        child: Text(provider),
+                        child: AppText(provider),
                       ))
                   .toList(),
               onChanged: (value) {},
@@ -414,20 +518,20 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Ghairi'),
+            child: AppText('Ghairi'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Njia ya malipo imeongezwa')),
+                const SnackBar(content: AppText('Njia ya malipo imeongezwa')),
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.sunsetOrange,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Ongeza'),
+            child: AppText('Ongeza'),
           ),
         ],
       ),
@@ -439,28 +543,29 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Futa Njia ya Malipo'),
-        content: Text('Je, una uhakika unataka kufuta $methodName?'),
+        title: AppText('Futa Njia ya Malipo'),
+        content: AppText('Je, una uhakika unataka kufuta $methodName?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Ghairi'),
+            child: AppText('Ghairi'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('$methodName imefutwa')),
+                SnackBar(content: AppText('$methodName imefutwa')),
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Futa'),
+            child: AppText('Futa'),
           ),
         ],
       ),
     );
   }
 }
+

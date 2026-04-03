@@ -81,3 +81,15 @@ app.*.map.json
 !**/ios/**/default.mode2v3
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
+
+# Security and local secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/*secret*.json
+**/*credentials*.json
+**/google-services.json
+**/serviceAccount*.json
+
+# Local generated media/cache
+backend/media/

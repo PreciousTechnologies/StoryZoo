@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
+import '../../core/auth/auth_provider.dart';
+import '../../core/utils/responsive_utils.dart';
 import '../../shared/widgets/glassmorphic_container.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 
@@ -56,6 +59,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final isAuthor = context.watch<AuthProvider>().isAuthor;
 
     return Scaffold(
       body: Container(
@@ -111,15 +115,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   ),
                   // Animals silhouette for top-right
                   Positioned(
-                    top: 50,
-                    right: 20,
+                    top: size.height * 0.1,
+                    right: ResponsiveUtils.getSpacing(context),
                     child: Opacity(
                       opacity: 0.15,
                       child: CachedNetworkImage(
                         imageUrl: 'https://images.unsplash.com/photo-1535338454770-6f8c583cd0a4?w=800&q=80',
                         fit: BoxFit.contain,
-                        height: 120,
-                        width: 120,
+                        height: ResponsiveUtils.isTablet(context) ? 150 : 120,
+                        width: ResponsiveUtils.isTablet(context) ? 150 : 120,
                         placeholder: (context, url) => const SizedBox.shrink(),
                         errorWidget: (context, url, error) => const SizedBox.shrink(),
                       ),
@@ -161,7 +165,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
             // Main content
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
+                padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.getPadding(context)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -171,9 +175,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     FadeTransition(
                       opacity: _fadeAnimation,
                       child: GlassmorphicContainer(
-                        width: 200,
-                        height: 200,
-                        borderRadius: 100,
+                        width: ResponsiveUtils.isTablet(context) ? 240 : 200,
+                        height: ResponsiveUtils.isTablet(context) ? 240 : 200,
+                        borderRadius: ResponsiveUtils.isTablet(context) ? 120 : 100,
                         blur: 15,
                         color: AppColors.glassWhite.withOpacity(0.3),
                         borderColor: AppColors.glassBorder,
@@ -185,11 +189,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                               // Placeholder for logo - replace with actual logo image
                               Icon(
                                 Icons.auto_stories_rounded,
-                                size: 80,
+                                size: ResponsiveUtils.isTablet(context) ? 100 : 80,
                                 color: AppColors.textLight,
                               ),
-                              const SizedBox(height: 12),
-                              Text(
+                              SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.8),
+                              AppText(
                                 'Story Zoo',
                                 style: (Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 24)).copyWith(
                                       color: AppColors.textLight,
@@ -203,7 +207,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       ),
                     ),
 
-                    const SizedBox(height: AppConstants.paddingXLarge),
+                    SizedBox(height: ResponsiveUtils.getPadding(context) * 2),
 
                     // Welcome text
                     SlideTransition(
@@ -212,16 +216,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                         opacity: _fadeAnimation,
                         child: Column(
                           children: [
-                            Text(
+                            AppText(
                               'Karibu Story Zoo! 🦁',
                               style: (Theme.of(context).textTheme.displaySmall ?? const TextStyle(fontSize: 32)).copyWith(
                                     color: AppColors.textLight,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: ResponsiveUtils.getHeadingSize(context, mobile: 28, tablet: 32, desktop: 40),
                                   ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 12),
-                            Text(
+                            SizedBox(height: ResponsiveUtils.getSpacing(context) * 0.8),
+                            AppText(
                               'Soma na usikie hadithi za Kiswahili\nkwa njia ya kisasa',
                               style: (Theme.of(context).textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
                                     color: AppColors.textLight.withOpacity(0.9),
@@ -249,9 +254,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                 context.go('/login');
                               },
                               color: AppColors.sunsetOrange,
-                              height: 60,
-                              borderRadius: 30,
-                              child: Text(
+                              height: ResponsiveUtils.getButtonHeight(context),
+                              borderRadius: ResponsiveUtils.getBorderRadius(context),
+                              child: AppText(
                                 'Anza Kusoma',
                                 style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
                                       color: AppColors.textLight,
@@ -259,12 +264,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                                     ),
                               ),
                             ),
+                                const SizedBox(height: 14),
+                                NeumorphicButton(
+                                  onPressed: () {
+                                    if (isAuthor) {
+                                      context.go('/author-dashboard');
+                                      return;
+                                    }
+                                    context.push('/author-onboarding');
+                                  },
+                                  color: AppColors.savannaGreen,
+                                  height: ResponsiveUtils.getButtonHeight(context),
+                                  borderRadius: ResponsiveUtils.getBorderRadius(context),
+                                  child: AppText(
+                                    isAuthor ? 'Nenda Dashboard ya Mwandishi' : 'Kuwa Mwandishi',
+                                    style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
+                                          color: AppColors.textLight,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
                           ],
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: AppConstants.paddingLarge),
+                    SizedBox(height: ResponsiveUtils.getPadding(context)),
                   ],
                 ),
               ),
@@ -333,3 +358,4 @@ class _FloatingCircleState extends State<_FloatingCircle> with SingleTickerProvi
     );
   }
 }
+

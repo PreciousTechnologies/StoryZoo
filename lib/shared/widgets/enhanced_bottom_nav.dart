@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'app_text.dart';
 import '../../core/constants/app_colors.dart';
 
 class EnhancedBottomNav extends StatelessWidget {
@@ -16,6 +17,11 @@ class EnhancedBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navShadowColor = isDark ? Colors.black.withOpacity(0.35) : Colors.black.withOpacity(0.1);
+    final navSurfaceColor = isDark ? const Color(0xCC2F2118) : Colors.white.withOpacity(0.85);
+    final navBorderColor = isDark ? const Color(0x66FFFFFF) : Colors.white.withOpacity(0.3);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       height: 60,
@@ -23,7 +29,7 @@ class EnhancedBottomNav extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: navShadowColor,
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -35,10 +41,10 @@ class EnhancedBottomNav extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.85),
+              color: navSurfaceColor,
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: navBorderColor,
                 width: 1.5,
               ),
             ),
@@ -47,34 +53,39 @@ class EnhancedBottomNav extends StatelessWidget {
               children: [
                 _buildNavItem(
                   icon: Icons.home_rounded,
-                  label: 'Home',
+                  label: 'Mwanzo',
                   index: 0,
                   isActive: currentIndex == 0,
+                  isDark: isDark,
                 ),
                 _buildNavItem(
                   icon: Icons.explore_rounded,
-                  label: 'Explore',
+                  label: 'Gundua',
                   index: 1,
                   isActive: currentIndex == 1,
+                  isDark: isDark,
                 ),
                 _buildNavItem(
                   icon: Icons.favorite_rounded,
-                  label: 'Saved',
+                  label: 'Maktaba',
                   index: 2,
                   isActive: currentIndex == 2,
+                  isDark: isDark,
                 ),
                 if (isAuthor)
                   _buildNavItem(
                     icon: Icons.dashboard_rounded,
-                    label: 'Dashboard',
+                    label: 'Dashibodi',
                     index: 4,
                     isActive: currentIndex == 4,
+                    isDark: isDark,
                   ),
                 _buildNavItem(
                   icon: Icons.person_rounded,
-                  label: 'Profile',
+                  label: 'Wasifu',
                   index: 3,
                   isActive: currentIndex == 3,
+                  isDark: isDark,
                 ),
               ],
             ),
@@ -89,6 +100,7 @@ class EnhancedBottomNav extends StatelessWidget {
     required String label,
     required int index,
     required bool isActive,
+    required bool isDark,
   }) {
     return GestureDetector(
       onTap: () => onTap(index),
@@ -125,12 +137,12 @@ class EnhancedBottomNav extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isActive ? Colors.white : AppColors.textMuted,
+              color: isActive ? Colors.white : (isDark ? Colors.white70 : AppColors.textMuted),
               size: isActive ? 22 : 20,
             ),
             if (isActive) ...[
               const SizedBox(width: 6),
-              Text(
+              AppText(
                 label,
                 style: const TextStyle(
                   color: Colors.white,
@@ -145,3 +157,4 @@ class EnhancedBottomNav extends StatelessWidget {
     );
   }
 }
+

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/welcome/welcome_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -13,6 +14,7 @@ import '../../features/profile/language_screen.dart';
 import '../../features/profile/theme_screen.dart';
 import '../../features/profile/help_screen.dart';
 import '../../features/profile/about_screen.dart';
+import '../../features/payments/subscribe_screen.dart';
 import '../../features/story_details/story_details_screen.dart';
 import '../../features/audio_player/audio_player_screen.dart';
 import '../../features/ebook_reader/ebook_reader_screen.dart';
@@ -47,6 +49,7 @@ class AppRouter {
   static const String childUI = '/child-ui';
   static const String login = '/login';
   static const String verifyOtp = '/verify-otp';
+  static const String subscribe = '/subscribe';
 
   static GoRouter buildRouter({String initialLocation = welcome}) {
     return GoRouter(
@@ -68,10 +71,10 @@ class AppRouter {
         path: verifyOtp,
         name: 'verifyOtp',
         pageBuilder: (context, state) {
-          final phone = state.extra is String ? state.extra as String : null;
+          final email = state.extra is String ? state.extra as String : null;
           return CustomTransitionPage(
             key: state.pageKey,
-            child: VerifyOtpScreen(phone: phone),
+            child: VerifyOtpScreen(email: email),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
@@ -205,9 +208,10 @@ class AppRouter {
         name: 'ebookReader',
         pageBuilder: (context, state) {
           final story = _storyFromState(state);
+          final bookId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
           return CustomTransitionPage(
             key: state.pageKey,
-            child: EbookReaderScreen(story: story),
+            child: EbookReaderScreen(story: story, bookId: bookId),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
@@ -346,6 +350,35 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        path: subscribe,
+        name: 'subscribe',
+        pageBuilder: (context, state) {
+          var bookId = 0;
+          final extra = state.extra;
+          if (extra is int) {
+            bookId = extra;
+          } else if (extra is String) {
+            bookId = int.tryParse(extra) ?? 0;
+          }
+
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: SubscribeScreen(bookId: bookId),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              const begin = Offset(1.0, 0.0);
+              const end = Offset.zero;
+              const curve = Curves.easeInOut;
+              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+              var offsetAnimation = animation.drive(tween);
+              return SlideTransition(
+                position: offsetAnimation,
+                child: child,
+              );
+            },
+          );
+        },
+      ),
+      GoRoute(
         path: notifications,
         name: 'notifications',
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -448,12 +481,12 @@ class AppRouter {
           children: [
             const Icon(Icons.error_outline, size: 80, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
+            AppText(
               'Page not found',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
-            Text(
+            AppText(
               state.error.toString(),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
@@ -486,3 +519,4 @@ class AppRouter {
     );
   }
 }
+

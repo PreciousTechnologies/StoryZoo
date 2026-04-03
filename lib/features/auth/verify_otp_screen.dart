@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/i18n/app_i18n.dart';
 
 class VerifyOtpScreen extends StatefulWidget {
-  final String? phone;
-  const VerifyOtpScreen({super.key, this.phone});
+  final String? email;
+  const VerifyOtpScreen({super.key, this.email});
 
   @override
   State<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -17,12 +19,12 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   final _controller = TextEditingController();
   bool _loading = false;
   String? _error;
-  String? _phone;
+  String? _email;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _phone = widget.phone;
+    _email = widget.email;
   }
 
   @override
@@ -35,13 +37,12 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       final otp = _controller.text.trim();
-      if (_phone == null) throw Exception('Missing phone');
-      if (otp.isEmpty) throw Exception('Enter OTP');
+      if (_email == null) throw Exception('Missing email');
+      if (!RegExp(r'^\d{4}$').hasMatch(otp)) throw Exception('Enter a valid 4-digit OTP');
       final auth = context.read<AuthProvider>();
-      await auth.verifyOtp(_phone!, otp);
+      await auth.verifyOtp(_email!, otp);
       if (!mounted) return;
-      // Replace stack and go to home
-      context.go('/home');
+      context.go(auth.isAuthor ? '/author-dashboard' : '/home');
     } catch (e) {
       setState(() { _error = e.toString(); });
     } finally {
@@ -54,7 +55,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter OTP')),
+      appBar: AppBar(title: AppText('Enter 4-digit OTP')),
       body: Stack(
         children: [
           Positioned.fill(
@@ -114,7 +115,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 4),
-                    Text(
+                    AppText(
                       'Weka msimbo (OTP)',
                       style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
                         color: AppColors.textLight,
@@ -123,23 +124,24 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
-                    Text('An OTP was sent to ${_phone ?? '-'}', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textLight.withOpacity(0.9))),
+                    AppText('An OTP was sent to ${_email ?? '-'}', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textLight.withOpacity(0.9))),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _controller,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'OTP',
-                        hintText: '6-digit code',
+                      maxLength: 4,
+                      decoration: InputDecoration(
+                        labelText: context.tr('OTP'),
+                        hintText: context.tr('4-digit code'),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
+                    if (_error != null) AppText(_error!, style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.sunsetOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
                       onPressed: _loading ? null : _verify,
-                      child: _loading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Thibitisha'),
+                      child: _loading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : AppText('Thibitisha'),
                     ),
                   ],
                 ),
@@ -151,3 +153,4 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     );
   }
 }
+

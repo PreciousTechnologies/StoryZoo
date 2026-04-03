@@ -1,10 +1,20 @@
+import 'package:flutter/foundation.dart';
+
 class AppConstants {
   AppConstants._();
 
-  // API Configuration (backend removed)
-  // Backend services were removed; keep empty base for offline/local usage.
-  static const String apiBaseUrl = '';
-  static const String apiVersion = '';
+  static const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  static const String googleWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID', defaultValue: '');
+
+  // API Configuration (Django backend)
+  static String get apiBaseUrl {
+    if (_apiBaseUrlOverride.isNotEmpty) return _apiBaseUrlOverride;
+    if (kIsWeb) return 'http://127.0.0.1:8000';
+    // Real Android phones need your computer's LAN IP, not localhost.
+    if (defaultTargetPlatform == TargetPlatform.android) return 'http://192.168.1.100:8000';
+    return 'http://127.0.0.1:8000';
+  }
+  static const String apiVersion = '/api';
   
   // App Info
   static const String appName = 'Story Zoo';

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
-import '../constants/app_constants.dart';
 
 class HttpAuthService implements AuthService {
   final String baseUrl;
@@ -29,8 +28,29 @@ class HttpAuthService implements AuthService {
   }
 
   @override
+  Future<String> signInWithGoogle(String idToken) async {
+    final url = Uri.parse('$baseUrl/auth/google/');
+    final res = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'id_token': idToken}),
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception('Google sign-in failed: ${res.body}');
+    }
+
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final token = body['token'];
+    if (token is! String || token.isEmpty) {
+      throw Exception('Backend did not return a valid auth token.');
+    }
+    return token;
+  }
+
+  @override
   Future<void> logout(String token) async {
     final url = Uri.parse('$baseUrl/auth/logout');
-    await http.post(url, headers: {'Authorization': 'Bearer $token'});
+    await http.post(url, headers: {'Authorization': 'Token $token'});
   }
 }

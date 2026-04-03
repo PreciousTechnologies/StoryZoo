@@ -3,10 +3,6 @@ buildscript {
         google()
         mavenCentral()
     }
-    dependencies {
-        // Google Services plugin required to read google-services.json into the Android build
-        classpath("com.google.gms:google-services:4.3.15")
-    }
 }
 
 allprojects {

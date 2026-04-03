@@ -35,6 +35,16 @@ class _NeumorphicButtonState extends State<NeumorphicButton> {
   @override
   Widget build(BuildContext context) {
     final isPressed = _isPressed || widget.isPressed;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final lightShadowColor = isDark
+    ? AppColors.sandBrown.withOpacity(0.14)
+    : AppColors.neuShadowLight;
+  final darkShadowColor = isDark
+    ? Colors.black.withOpacity(0.45)
+    : AppColors.neuShadowDark.withOpacity(0.3);
+  final pressedShadowColor = isDark
+    ? Colors.black.withOpacity(0.5)
+    : AppColors.neuShadowDark.withOpacity(0.2);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -55,22 +65,22 @@ class _NeumorphicButtonState extends State<NeumorphicButton> {
               ? [
                   // Pressed state - subtle inner shadow effect
                   BoxShadow(
-                    color: AppColors.neuShadowDark.withOpacity(0.2),
+                    color: pressedShadowColor,
                     offset: const Offset(2, 2),
                     blurRadius: 4,
                   ),
                 ]
               : [
                   // Light shadow (top-left)
-                  const BoxShadow(
-                    color: AppColors.neuShadowLight,
-                    offset: Offset(-6, -6),
+                  BoxShadow(
+                    color: lightShadowColor,
+                    offset: const Offset(-6, -6),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),
                   // Dark shadow (bottom-right)
                   BoxShadow(
-                    color: AppColors.neuShadowDark.withOpacity(0.3),
+                    color: darkShadowColor,
                     offset: const Offset(6, 6),
                     blurRadius: 12,
                     spreadRadius: 1,
@@ -85,7 +95,7 @@ class _NeumorphicButtonState extends State<NeumorphicButton> {
 
 /// Neumorphic Card Widget
 /// Creates a 3D card with subtle depth
-class NeumorphicCard extends StatelessWidget {
+class NeumorphicCard extends StatefulWidget {
   final Widget child;
   final double? width;
   final double? height;
@@ -108,43 +118,78 @@ class NeumorphicCard extends StatelessWidget {
   });
 
   @override
+  State<NeumorphicCard> createState() => _NeumorphicCardState();
+}
+
+class _NeumorphicCardState extends State<NeumorphicCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final cardContent = Container(
-      width: width,
-      height: height,
-      margin: margin,
-      padding: padding ?? const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
-          // Light shadow (top-left)
-          const BoxShadow(
-            color: AppColors.neuShadowLight,
-            offset: Offset(-5, -5),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-          // Dark shadow (bottom-right)
-          BoxShadow(
-            color: AppColors.neuShadowDark.withOpacity(0.3),
-            offset: const Offset(5, 5),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
+    final hasTap = widget.onTap != null;
+    final isPressed = hasTap && _isPressed;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lightShadowColor = isDark
+      ? AppColors.sandBrown.withOpacity(0.14)
+      : AppColors.neuShadowLight;
+    final darkShadowColor = isDark
+      ? Colors.black.withOpacity(0.45)
+      : AppColors.neuShadowDark.withOpacity(0.3);
+    final pressedShadowColor = isDark
+      ? Colors.black.withOpacity(0.5)
+      : AppColors.neuShadowDark.withOpacity(0.2);
+
+    final cardContent = AnimatedScale(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.985 : 1,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        width: widget.width,
+        height: widget.height,
+        margin: widget.margin,
+        padding: widget.padding ?? const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: widget.color,
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          boxShadow: isPressed
+              ? [
+                  BoxShadow(
+                    color: pressedShadowColor,
+                    offset: const Offset(2, 2),
+                    blurRadius: 5,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: lightShadowColor,
+                    offset: const Offset(-5, -5),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                  BoxShadow(
+                    color: darkShadowColor,
+                    offset: const Offset(5, 5),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ],
+        ),
+        child: widget.child,
       ),
-      child: child,
     );
 
-    if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: cardContent,
-      );
-    }
+    if (!hasTap) return cardContent;
 
-    return cardContent;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap?.call();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: cardContent,
+    );
   }
 }
 
@@ -174,6 +219,17 @@ class _NeumorphicIconButtonState extends State<NeumorphicIconButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lightShadowColor = isDark
+        ? AppColors.sandBrown.withOpacity(0.14)
+        : AppColors.neuShadowLight;
+    final darkShadowColor = isDark
+        ? Colors.black.withOpacity(0.45)
+        : AppColors.neuShadowDark.withOpacity(0.3);
+    final pressedShadowColor = isDark
+        ? Colors.black.withOpacity(0.5)
+        : AppColors.neuShadowDark.withOpacity(0.2);
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
@@ -191,19 +247,19 @@ class _NeumorphicIconButtonState extends State<NeumorphicIconButton> {
           boxShadow: _isPressed
               ? [
                   BoxShadow(
-                    color: AppColors.neuShadowDark.withOpacity(0.2),
+                    color: pressedShadowColor,
                     offset: const Offset(2, 2),
                     blurRadius: 4,
                   ),
                 ]
               : [
-                  const BoxShadow(
-                    color: AppColors.neuShadowLight,
-                    offset: Offset(-4, -4),
+                  BoxShadow(
+                    color: lightShadowColor,
+                    offset: const Offset(-4, -4),
                     blurRadius: 8,
                   ),
                   BoxShadow(
-                    color: AppColors.neuShadowDark.withOpacity(0.3),
+                    color: darkShadowColor,
                     offset: const Offset(4, 4),
                     blurRadius: 8,
                   ),

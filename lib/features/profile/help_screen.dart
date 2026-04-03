@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/i18n/app_i18n.dart';
+import '../../shared/widgets/micro_interactions.dart';
 import '../../shared/widgets/neumorphic_widgets.dart';
 
 class HelpScreen extends StatelessWidget {
@@ -9,6 +12,12 @@ class HelpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundTop = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final backgroundBottom = isDark ? const Color(0xFF2A1B12) : AppColors.warmBeige;
+    final cardSurface = isDark ? const Color(0xFF2F2118) : AppColors.cardBackground;
+    final secondaryText = isDark ? Colors.white70 : AppColors.textSecondary;
+
     final faqItems = [
       {
         'question': 'Ninawezaje kununua hadithi?',
@@ -38,13 +47,13 @@ class HelpScreen extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.backgroundLight,
-              AppColors.warmBeige,
+              backgroundTop,
+              backgroundBottom,
             ],
           ),
         ),
@@ -66,16 +75,16 @@ class HelpScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          AppText(
                             'Msaada',
                             style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle(fontSize: 24)).copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
-                          Text(
+                          AppText(
                             'Maswali yanayoulizwa mara kwa mara',
                             style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14)).copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: secondaryText,
                                 ),
                           ),
                         ],
@@ -89,6 +98,28 @@ class HelpScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
                   children: [
+                    StaggeredFadeSlide(
+                      order: 0,
+                      child: NeumorphicCard(
+                        borderRadius: 20,
+                        color: cardSurface,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        child: TextField(
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          hintText: context.tr('Tafuta msaada, mfano: malipo, lugha, login...'),
+                          hintStyle: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white54 : AppColors.textMuted,
+                          ),
+                          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.sunsetOrange),
+                        ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
                     // Contact cards
                     Row(
                       children: [
@@ -100,7 +131,7 @@ class HelpScreen extends StatelessWidget {
                             AppColors.info,
                             () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Inafungua programu ya barua pepe...')),
+                                const SnackBar(content: AppText('Inafungua programu ya barua pepe...')),
                               );
                             },
                           ),
@@ -114,7 +145,7 @@ class HelpScreen extends StatelessWidget {
                             AppColors.success,
                             () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Inafungua programu ya simu...')),
+                                const SnackBar(content: AppText('Inafungua programu ya simu...')),
                               );
                             },
                           ),
@@ -122,10 +153,30 @@ class HelpScreen extends StatelessWidget {
                       ],
                     ),
 
+                    const SizedBox(height: 18),
+
+                    NeumorphicCard(
+                      borderRadius: 20,
+                      color: cardSurface,
+                      padding: const EdgeInsets.all(16),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.support_agent, color: AppColors.savannaGreen),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: AppText(
+                              'Timu yetu ya msaada inajibu ndani ya saa 2 hadi 6 kwa maswali mengi.',
+                              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 32),
 
                     // FAQ Section
-                    const Text(
+                    AppText(
                       'Maswali Yanayoulizwa',
                       style: TextStyle(
                         fontSize: 18,
@@ -134,12 +185,15 @@ class HelpScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    ...faqItems.map((faq) => _buildFaqItem(faq)).toList(),
+                    ...faqItems.map((faq) {
+                      final index = faqItems.indexOf(faq);
+                      return StaggeredFadeSlide(order: index + 1, child: _buildFaqItem(context, faq));
+                    }).toList(),
 
                     const SizedBox(height: 32),
 
                     // Additional resources
-                    const Text(
+                    AppText(
                       'Vyanzo Vya Ziada',
                       style: TextStyle(
                         fontSize: 18,
@@ -176,7 +230,7 @@ class HelpScreen extends StatelessWidget {
                       AppColors.warning,
                     ),
 
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 120),
                   ],
                 ),
               ),
@@ -194,11 +248,13 @@ class HelpScreen extends StatelessWidget {
     Color color,
     VoidCallback onTap,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: NeumorphicCard(
         borderRadius: 20,
-        color: AppColors.cardBackground,
+        color: isDark ? const Color(0xFF2F2118) : AppColors.cardBackground,
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
@@ -211,7 +267,7 @@ class HelpScreen extends StatelessWidget {
               child: Icon(icon, color: color, size: 32),
             ),
             const SizedBox(height: 12),
-            Text(
+            AppText(
               label,
               style: const TextStyle(
                 fontSize: 14,
@@ -225,7 +281,9 @@ class HelpScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFaqItem(Map<String, dynamic> faq) {
+  Widget _buildFaqItem(BuildContext context, Map<String, dynamic> faq) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Theme(
@@ -234,7 +292,7 @@ class HelpScreen extends StatelessWidget {
         ),
         child: NeumorphicCard(
           borderRadius: 20,
-          color: AppColors.cardBackground,
+          color: isDark ? const Color(0xFF2F2118) : AppColors.cardBackground,
           padding: EdgeInsets.zero,
           child: ExpansionTile(
             tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -247,7 +305,7 @@ class HelpScreen extends StatelessWidget {
               ),
               child: const Icon(Icons.help_outline, color: AppColors.info, size: 20),
             ),
-            title: Text(
+            title: AppText(
               faq['question'],
               style: const TextStyle(
                 fontSize: 15,
@@ -255,11 +313,11 @@ class HelpScreen extends StatelessWidget {
               ),
             ),
             children: [
-              Text(
+              AppText(
                 faq['answer'],
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: isDark ? Colors.white70 : AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -277,15 +335,17 @@ class HelpScreen extends StatelessWidget {
     IconData icon,
     Color color,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Inafungua $title...')),
+          SnackBar(content: AppText('Inafungua $title...')),
         );
       },
       child: NeumorphicCard(
         borderRadius: 20,
-        color: AppColors.cardBackground,
+        color: isDark ? const Color(0xFF2F2118) : AppColors.cardBackground,
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -303,7 +363,7 @@ class HelpScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  AppText(
                     title,
                     style: const TextStyle(
                       fontSize: 16,
@@ -311,20 +371,25 @@ class HelpScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  AppText(
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: isDark ? Colors.white70 : AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.textMuted, size: 16),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: isDark ? Colors.white54 : AppColors.textMuted,
+              size: 16,
+            ),
           ],
         ),
       ),
     );
   }
 }
+

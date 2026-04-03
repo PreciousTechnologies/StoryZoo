@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/i18n/app_i18n.dart';
 
 class LoginEmailScreen extends StatefulWidget {
   const LoginEmailScreen({super.key});
@@ -26,20 +28,15 @@ class _LoginEmailScreenState extends State<LoginEmailScreen> {
   Future<void> _sendOtp() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final phone = _controller.text.trim();
-      if (phone.isEmpty) throw Exception('Ingiza nambari ya simu');
-      // basic Tanzanian phone validation
-      // Normalize common inputs: accept starting with 0 or 7 or +255
-      String normalized = phone.replaceAll(RegExp(r'\s+'), '');
-      if (normalized.startsWith('0')) normalized = '+255' + normalized.substring(1);
-      if (!(normalized.startsWith('+2557') && normalized.length == 13)) {
-        throw Exception('Tafadhali ingiza nambari halali ya Tanzania (e.g. +255712345678)');
+      final email = _controller.text.trim().toLowerCase();
+      if (email.isEmpty) throw Exception('Ingiza barua pepe yako');
+      if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+        throw Exception('Tafadhali ingiza barua pepe sahihi');
       }
       final auth = context.read<AuthProvider>();
-      await auth.requestOtp(normalized);
+      await auth.requestOtp(email);
       if (!mounted) return;
-      // Navigate to OTP verify screen (pass phone as extra)
-      context.push('/verify-otp', extra: normalized);
+      context.push('/verify-otp', extra: email);
     } catch (e) {
       setState(() { _error = e.toString(); });
     } finally {
@@ -50,9 +47,10 @@ class _LoginEmailScreenState extends State<LoginEmailScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final hasPendingAuthorOnboarding = context.watch<AuthProvider>().hasPendingAuthorOnboarding;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: AppText('Login')),
       body: Stack(
         children: [
           // Background images + color overlay (from welcome screen)
@@ -114,8 +112,8 @@ class _LoginEmailScreenState extends State<LoginEmailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 4),
-                    Text(
-                      'Ingia kwa nambari ya simu',
+                    AppText(
+                      'Ingia kwa barua pepe',
                       style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20)).copyWith(
                         color: AppColors.textLight,
                         fontWeight: FontWeight.bold,
@@ -125,23 +123,38 @@ class _LoginEmailScreenState extends State<LoginEmailScreen> {
                     const SizedBox(height: 18),
                     TextField(
                       controller: _controller,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: 'Nambari ya Simu',
-                        hintText: '+255712345678',
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: context.tr('Barua Pepe'),
+                        hintText: context.tr('you@example.com'),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
+                    if (hasPendingAuthorOnboarding)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.info.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.info.withOpacity(0.4)),
+                        ),
+                        child: AppText(
+                          'Maliza kuingia ili taarifa za onboarding ya mwandishi zihifadhiwe kwenye akaunti yako.',
+                          style: TextStyle(color: AppColors.textLight, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    if (_error != null) AppText(_error!, style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.sunsetOrange, padding: const EdgeInsets.symmetric(vertical: 14)),
                       onPressed: _loading ? null : _sendOtp,
-                      child: _loading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Tuma OTP'),
+                      child: _loading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : AppText('Tuma OTP'),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      'Tutakutumia msimbo wa kuthibitisha kwenye nambari hiyo.',
+                    AppText(
+                      'Tutakutumia msimbo wa tarakimu 4 kwenye barua pepe hiyo.',
                       style: (Theme.of(context).textTheme.bodySmall ?? const TextStyle(fontSize: 12)).copyWith(color: AppColors.textLight.withOpacity(0.85)),
                       textAlign: TextAlign.center,
                     ),
@@ -155,3 +168,4 @@ class _LoginEmailScreenState extends State<LoginEmailScreen> {
     );
   }
 }
+
