@@ -93,3 +93,7 @@ app.*.map.json
 
 # Local generated media/cache
 backend/media/
+
+# Local Piper assets (keep docs, ignore binaries/models)
+piper/*
+!piper/README.md

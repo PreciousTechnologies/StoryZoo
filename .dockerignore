@@ -1,0 +1,29 @@
+.git
+.gitignore
+.vscode
+.idea
+
+# Flutter/mobile/web folders not needed for backend container build
+android
+ios
+linux
+macos
+windows
+web
+lib
+test
+assets
+build
+
+# Python cache/artifacts
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache
+
+# Local env and generated data
+**/.env
+**/.env.*
+backend/media
+backend/staticfiles

@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: storyzoo-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    autoDeploy: true
+    disk:
+      name: storyzoo-data
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: DJANGO_DEBUG
+        value: false
+      - key: CORS_ALLOW_ALL
+        value: false
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: POSTGRES_DB
+        sync: false
+      - key: POSTGRES_USER
+        sync: false
+      - key: POSTGRES_PASSWORD
+        sync: false
+      - key: POSTGRES_HOST
+        sync: false
+      - key: POSTGRES_PORT
+        value: "5432"
+      - key: PESAPAL_BASE_URL
+        value: https://pay.pesapal.com/v3
+      - key: PESAPAL_CONSUMER_KEY
+        sync: false
+      - key: PESAPAL_CONSUMER_SECRET
+        sync: false
+      - key: PESAPAL_CALLBACK_URL
+        sync: false
+      - key: PESAPAL_IPN_URL
+        sync: false
+      - key: PESAPAL_IPN_ID
+        sync: false
+      - key: PIPER_EXECUTABLE
+        value: /usr/local/bin/piper
+      - key: PIPER_MODEL_PATH
+        value: /var/data/piper/en_US-lessac-medium.onnx
+      - key: PIPER_MODEL_PATH_EN
+        value: /var/data/piper/en_US-lessac-medium.onnx
+      - key: PIPER_MODEL_PATH_SW
+        value: /var/data/piper/sw_CD-lanfrica-medium.onnx
+      - key: PIPER_MODEL_URL_EN
+        value: https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
+      - key: PIPER_MODEL_CONFIG_URL_EN
+        value: https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+      - key: PIPER_MODEL_URL_SW
+        value: https://huggingface.co/rhasspy/piper-voices/resolve/main/sw/sw_CD/lanfrica/medium/sw_CD-lanfrica-medium.onnx
+      - key: PIPER_MODEL_CONFIG_URL_SW
+        value: https://huggingface.co/rhasspy/piper-voices/resolve/main/sw/sw_CD/lanfrica/medium/sw_CD-lanfrica-medium.onnx.json
