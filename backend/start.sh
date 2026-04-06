@@ -5,8 +5,8 @@ cd /app
 
 mkdir -p /var/data/piper /var/data/media /var/data/static
 
-: "${PIPER_MODEL_PATH_EN:=/var/data/piper/en_US-lessac-medium.onnx}"
-: "${PIPER_MODEL_PATH_SW:=/var/data/piper/sw_CD-lanfrica-medium.onnx}"
+: "${PIPER_MODEL_PATH_EN:=/tmp/piper/en_US-lessac-medium.onnx}"
+: "${PIPER_MODEL_PATH_SW:=/tmp/piper/sw_CD-lanfrica-medium.onnx}"
 : "${PIPER_MODEL_URL_EN:=https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx}"
 : "${PIPER_MODEL_CONFIG_URL_EN:=https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json}"
 : "${PIPER_MODEL_URL_SW:=https://huggingface.co/rhasspy/piper-voices/resolve/main/sw/sw_CD/lanfrica/medium/sw_CD-lanfrica-medium.onnx}"

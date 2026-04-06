@@ -43,7 +43,7 @@ This repository includes a root `render.yaml` and backend container config:
 
 ### What happens at deploy
 - Container builds Django + Gunicorn and installs Piper binary.
-- On boot, `start.sh` downloads Piper English/Swahili voice models to `/var/data/piper` if missing.
+- On boot, `start.sh` downloads Piper English/Swahili voice models to `/tmp/piper` if missing.
 - Django migrations run automatically.
 - App starts with Gunicorn on Render's `PORT`.
 
@@ -68,5 +68,5 @@ This repository includes a root `render.yaml` and backend container config:
 	- `PESAPAL_IPN_ID=...`
 
 ### Notes
-- A persistent disk is mounted at `/var/data` (configured in `render.yaml`) so Piper models are downloaded once and reused.
+- Free setup uses `/tmp/piper` (ephemeral storage), so models may re-download when the service restarts.
 - If you want different voices, override `PIPER_MODEL_URL_*` and `PIPER_MODEL_CONFIG_URL_*` in Render env vars.

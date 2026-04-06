@@ -27,9 +27,9 @@ RUN chmod +x /app/start.sh
 ENV DJANGO_DEBUG=false \
     CORS_ALLOW_ALL=false \
     PIPER_EXECUTABLE=/usr/local/bin/piper \
-    PIPER_MODEL_PATH=/var/data/piper/en_US-lessac-medium.onnx \
-    PIPER_MODEL_PATH_EN=/var/data/piper/en_US-lessac-medium.onnx \
-    PIPER_MODEL_PATH_SW=/var/data/piper/sw_CD-lanfrica-medium.onnx \
+    PIPER_MODEL_PATH=/tmp/piper/en_US-lessac-medium.onnx \
+    PIPER_MODEL_PATH_EN=/tmp/piper/en_US-lessac-medium.onnx \
+    PIPER_MODEL_PATH_SW=/tmp/piper/sw_CD-lanfrica-medium.onnx \
     PIPER_MODEL_URL_EN=https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx \
     PIPER_MODEL_CONFIG_URL_EN=https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json \
     PIPER_MODEL_URL_SW=https://huggingface.co/rhasspy/piper-voices/resolve/main/sw/sw_CD/lanfrica/medium/sw_CD-lanfrica-medium.onnx \

@@ -4,10 +4,6 @@ services:
     env: docker
     dockerfilePath: ./backend/Dockerfile
     autoDeploy: true
-    disk:
-      name: storyzoo-data
-      mountPath: /var/data
-      sizeGB: 10
     envVars:
       - key: DJANGO_DEBUG
         value: false
@@ -40,11 +36,11 @@ services:
       - key: PIPER_EXECUTABLE
         value: /usr/local/bin/piper
       - key: PIPER_MODEL_PATH
-        value: /var/data/piper/en_US-lessac-medium.onnx
+        value: /tmp/piper/en_US-lessac-medium.onnx
       - key: PIPER_MODEL_PATH_EN
-        value: /var/data/piper/en_US-lessac-medium.onnx
+        value: /tmp/piper/en_US-lessac-medium.onnx
       - key: PIPER_MODEL_PATH_SW
-        value: /var/data/piper/sw_CD-lanfrica-medium.onnx
+        value: /tmp/piper/sw_CD-lanfrica-medium.onnx
       - key: PIPER_MODEL_URL_EN
         value: https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
       - key: PIPER_MODEL_CONFIG_URL_EN
